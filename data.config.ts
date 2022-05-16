@@ -32,7 +32,7 @@ export const data = {
             pageTitle: "Remix.GUN | Document Builder Demo ",
             src: "/github/rmix-gun.png",
             title: 'Click Here To Edit',
-            pageText: `Build the object by entering the path to the document, the key and value properties. The data object will be saved to the graph and asyncronously rendered. This application is peered to https://${process.env.PEER_DOMAIN}. The same data object will also be available there as well.`,
+            pageText: `Build the object by entering the path to the document, the key and value properties. The data object will be saved to the graph and asyncronously rendered. This application is peered to https://${process.env.PEER_DOMAIN}. The same data object will be available there also.`,
         },
     },
 }
