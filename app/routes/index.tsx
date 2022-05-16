@@ -16,12 +16,14 @@ import Display from "~/components/DisplayHeading";
 import { useGunStatic } from "~/lib/gun/hooks";
 import FormBuilder from "~/components/FormBuilder";
 import SimpleSkeleton from "~/components/skeleton/SimpleSkeleton";
+import invariant from "@remix-run/react/invariant";
 
 const noop = () => {};
 type ErrObj = {
-  key?: string | undefined;
-  value?: string | undefined;
-  form?: string | undefined;
+  path?: string;
+  key?: string;
+  value?: string;
+  form?: string;
 };
 type LoadError = {
   error: ErrObj;
@@ -42,8 +44,11 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   let { formData } = RemixGunContext(Gun, request);
   let error: ErrObj = {};
   try {
-    let { prop, value } = await formData();
-    console.log(prop, value, "prop, value");
+    let { prop, value, path } = await formData();
+    console.log(path, prop, value, "prop, value");
+    if (typeof path !== "string" || path.length === 0) {
+      error.path = "Path is required";
+    }
     if (!/^(?![0-9])[a-zA-Z0-9$_]+$/.test(prop)) {
       error.key =
         "Invalid property name : Follow Regex Pattern /^(?![0-9])[a-zA-Z0-9$_]+$/";
@@ -56,7 +61,7 @@ export let action: ActionFunction = async ({ params, request, context }) => {
     if (Object.values(error).length > 0) {
       return json<LoadError>({ error });
     }
-    return json({ [prop]: value });
+    return json({ path, data: { [prop]: value } });
   } catch (err) {
     error.form = err as string;
     return json<LoadError>({ error });
@@ -95,33 +100,56 @@ function SuspendedTest({
 }) {
   function RenderedData() {
     let data = getData();
-    delete data._;
-
+    let path = data._["#"];
     return (
-      <div>
-        <div className="grid grid-cols-1 gap-4 p-4">
-          <div className="col-span-1">
-            <h5>Fetched Data</h5>
-            <pre className=" bg-orange-300 text-sm wrapped-text text-primary rounded-md"></pre>
-          </div>
+      <div className="grid grid-cols-1 gap-4 p-4">
+        <div className="col-span-1">
+          <h5>Fetched Data At {path}</h5>
+          {data &&
+            Object.entries(data).map((val) => {
+              let [key, value] = val;
+              if (key === "_") {
+                return;
+              }
+              return (
+                <div className="flex flex-row items-center space-y-5 justify-center space-x-5">
+                  {/* <div className="w-12 bg-gray-300 h-12 rounded-full "></div> */}
+                  <div className="w-1/3 p-5 rounded-md ">{key}</div>
+                  {/* <div className="flex flex-col space-y-3"> */}
+                  <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
+                    {`${value}`}
+                  </div>
+                  {/* </div> */}
+                </div>
+              );
+            })}
         </div>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
       </div>
     );
   }
   return <RenderedData />;
 }
-
+type LoadAction = {
+  path: string;
+  data: Record<string, string>;
+};
 export default function Index() {
-  let action = useActionData<Record<string, string> | LoadError>();
+  let action = useActionData<LoadAction | LoadError>(),
+    error = action && (action as LoadError).error,
+    ackData = action && (action as LoadAction).data,
+    path = action
+      ? (action as LoadAction).path.replace("/", ".")
+      : "posts.test";
   const [gun] = useGunStatic(Gun);
-  const Playground = FormBuilder();
-  useIf([action, !action?.error], () => {
-    gun.get("posts").get("test").put(action);
+  const ObjectBuilder = FormBuilder();
+  useIf([ackData, !error], () => {
+    invariant(ackData, "ackData is undefined");
+    gun.path(path).put(ackData);
   });
-  let testLoader = useDeferedLoaderData<any>("/api/gun/posts.test");
-  let keyErr = action?.error ? (action as LoadError).error?.key : undefined;
-  let valueErr = action?.error ? (action as LoadError).error?.value : undefined;
+  let testLoader = useDeferedLoaderData<any>(`/api/gun/${path}`);
+  let keyErr = error ? error?.key : undefined;
+  let valueErr = error ? error?.value : undefined;
+  let pathErr = error ? error?.path : undefined;
   const noop = () => {};
   return (
     <>
@@ -134,47 +162,64 @@ export default function Index() {
           maxWidth: "520px",
         }}
       >
-        <Playground.Form method={"post"}>
-          <Playground.Input
+        <ObjectBuilder.Form method={"post"}>
+          <ObjectBuilder.Input
+            type="text"
+            required
+            name="path"
+            label={"Document Path"}
+            placeholder={"posts/test"}
+            error={pathErr}
+          />
+          <ObjectBuilder.Input
             type="text"
             required
             name="prop"
             label={"Key"}
             error={keyErr}
           />
-          <Playground.Input
+          <ObjectBuilder.Input
             type="text"
             required
             name="value"
             label={"Value"}
             error={valueErr}
           />
-          <Playground.Submit label={"Submit"} />
-        </Playground.Form>
-      </div>
-      <Suspense
-        fallback={
-          <div className="grid grid-cols-1 gap-4 p-4">
-            <div className="col-span-1">
-              <h5>Cached Data From Radisk/ IndexedDB</h5>
-              {testLoader.cachedData &&
-                Object.entries(testLoader.cachedData._[">"]).map((val) => (
-                  <>
-                    <p>
-                      {val[0]}: {val[1]}
-                    </p>
-                    <SimpleSkeleton />
-                  </>
-                ))}
+          <ObjectBuilder.Submit label={"Submit"} />
+        </ObjectBuilder.Form>
+        <Suspense
+          fallback={
+            <div className="grid grid-cols-1 gap-4 p-4">
+              <div className="col-span-1">
+                <h5>Cached Data From Radisk/ IndexedDB</h5>
+                {testLoader.cachedData &&
+                  Object.entries(testLoader.cachedData).map((val) => {
+                    let [key, value] = val;
+                    if (key === "_") {
+                      return;
+                    }
+                    return (
+                      <div className="flex animate-pulse flex-row items-center space-y-5 justify-center space-x-5">
+                        {/* <div className="w-12 bg-gray-300 h-12 rounded-full "></div> */}
+                        <div className="w-1/3 p-5 rounded-md ">{key}</div>
+                        {/* <div className="flex flex-col space-y-3"> */}
+                        <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
+                          {`${value}`}
+                        </div>
+                        {/* </div> */}
+                      </div>
+                    );
+                  })}
 
-              {/* )} */}
-              {/* // </pre> */}
+                {/* )} */}
+                {/* // </pre> */}
+              </div>
             </div>
-          </div>
-        }
-      >
-        <SuspendedTest getData={testLoader.load} error={action?.error} />
-      </Suspense>
+          }
+        >
+          <SuspendedTest getData={testLoader.load} error />
+        </Suspense>
+      </div>
     </>
   );
 }
