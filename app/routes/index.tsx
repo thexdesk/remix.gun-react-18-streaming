@@ -101,6 +101,9 @@ function SuspendedTest({
   function RenderedData() {
     let data = getData();
     let path = data._["#"];
+    if (data.error) {
+      return <></>;
+    }
     return (
       <div className="grid grid-cols-1 gap-4 p-4">
         <div className="col-span-1">
@@ -150,7 +153,6 @@ export default function Index() {
   let keyErr = error ? error?.key : undefined;
   let valueErr = error ? error?.value : undefined;
   let pathErr = error ? error?.path : undefined;
-  const noop = () => {};
   return (
     <>
       <WelcomeCard />
