@@ -64,12 +64,9 @@ export const GunContextProvider = ({
   useIf([fetcher.type === "init", !fetcher.data], () => {
     fetcher.load("/api/gun/token");
   });
-  useIf(
-    [fetcher.type === "done", !fetcher.data.error, fetcher.data.token],
-    () => {
-      accessTokenRef.current = fetcher.data.token;
-    }
-  );
+  useIf([fetcher.type === "done", fetcher.data.token], () => {
+    accessTokenRef.current = fetcher.data.token;
+  });
   useEffect(() => {
     Gun.on("opt", function (this: IGunHookContext<_GunRoot>, ctx: _GunRoot) {
       if ((ctx as any).once) return;

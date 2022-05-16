@@ -8,7 +8,7 @@ import { createRequestHandler } from "@remix-run/server-runtime";
 import * as build from "@remix-run/server-build";
 import mime from "mime";
 import { RemixGunContext } from "./load-context";
-import Gun, { ISEAPair } from "gun";
+import Gun, { GunHookMessageIn, IGunHookContext, ISEAPair, _GunRoot } from "gun";
 import 'gun/lib/path'
 import 'gun/sea'
 import 'gun/lib/webrtc'
@@ -22,8 +22,10 @@ import 'gun/lib/load'
 import 'gun/lib/open'
 import 'gun/lib/not'
 import 'gun/lib/axe'
+import jwt from "jsonwebtoken";
 import { data } from "../data.config";
 import { parseJSON } from "./lib/parseJSON";
+import context from "./lib/gun/hooks/context";
 
 
 installGlobals();
@@ -38,6 +40,47 @@ const env = {
     epriv: process.env.EPRIV,
   },
 };
+
+/**
+ * GUN STUFF
+ */
+// Gun.on('opt', function (this: IGunHookContext<_GunRoot>, context: any) {
+//   if ((context as any).once) return;
+//   // Pass to subsequent opt handlers
+//   this.to.next(context)
+
+//   const { isValid } = context.opt
+
+//   if (typeof isValid !== 'function') {
+//     throw new Error('you must pass in an isValid function')
+//   }
+
+//   // Check all incoming traffic
+//   context.on('in', function <
+//     MessageExtension extends Partial<{
+//       headers: { accessToken: string };
+//       err: string;
+//     }>,
+//     MetaExtension extends Partial<_GunRoot>
+//   >(this: IGunHookContext<GunHookMessageIn<MessageExtension, MetaExtension>>, msg: GunHookMessageIn<MessageExtension, MetaExtension>) {
+//     var to = this.to
+//     // restrict put
+//     if (msg.put) {
+//       const isValidMsg = isValid(msg)
+
+//       if (isValidMsg instanceof Error) {
+//         context.on('in', { '@': msg['#'], err: isValidMsg.message })
+//       } else {
+//         if (isValidMsg) {
+//           to.next(msg)
+//         }
+//       }
+//     } else {
+//       to.next(msg)
+//     }
+//   })
+// })
+
 
 let remixHandler = createRequestHandler(
   build,
@@ -132,12 +175,34 @@ let peerList = {
   DOMAIN: getDomain(),
   PEER: `https://${env.PEER_DOMAIN}/gun`,
 };
+// function verifyToken(msg: { headers: { accessToken: string; }; }) {
+//   if (msg?.headers?.accessToken) {
+//     try {
+//       jwt.verify(msg.headers.accessToken, env.APP_KEY_PAIR.priv as string);
+
+//       return true;
+//     } catch (err) {
+//       const error = new Error('Invalid access token');
+
+//       // if (err.name === 'TokenExpiredError') {
+//       //   // you might want to implement silent refresh here
+//       //   error.expiredAt = err.expiredAt;
+//       // }
+
+//       return error;
+//     }
+//   }
+
+//   return false;
+// }
+
+
 export const gun = Gun({
   peers: [peerList.PEER],
   web: server.listen(env.CLIENT, () => {
     console.log(`Remix.Gun Relay Server is listening on ${getDomain()}`);
   }),
-  radisk: true
+  radisk: true,
 
 });
 gun.get('pages').put(data.pages)

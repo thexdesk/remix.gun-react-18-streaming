@@ -19,9 +19,9 @@ import SimpleSkeleton from "~/components/skeleton/SimpleSkeleton";
 
 const noop = () => {};
 type ErrObj = {
-  _key?: string | undefined;
-  _value?: string | undefined;
-  _form?: string | undefined;
+  key?: string | undefined;
+  value?: string | undefined;
+  form?: string | undefined;
 };
 type LoadError = {
   error: ErrObj;
@@ -43,13 +43,13 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   let error: ErrObj = {};
   try {
     let { prop, value } = await formData();
-
+    console.log(prop, value, "prop, value");
     if (!/^(?![0-9])[a-zA-Z0-9$_]+$/.test(prop)) {
-      error._key =
+      error.key =
         "Invalid property name : Follow Regex Pattern /^(?![0-9])[a-zA-Z0-9$_]+$/";
     }
     if (typeof value !== "string" || value.length < 1 || value.length > 240) {
-      error._value =
+      error.value =
         "Property values must be greater than 1 and less than 240 characters";
     }
 
@@ -58,7 +58,7 @@ export let action: ActionFunction = async ({ params, request, context }) => {
     }
     return json({ [prop]: value });
   } catch (err) {
-    error._form = err as string;
+    error.form = err as string;
     return json<LoadError>({ error });
   }
 };
@@ -120,7 +120,8 @@ export default function Index() {
     gun.get("posts").get("test").put(action);
   });
   let testLoader = useDeferedLoaderData<any>("/api/gun/posts.test");
-  let [keyErr, valErr] = Object.values(action?.error ?? {});
+  let keyErr = action?.error ? (action as LoadError).error?.key : undefined;
+  let valueErr = action?.error ? (action as LoadError).error?.value : undefined;
   const noop = () => {};
   return (
     <>
@@ -146,7 +147,7 @@ export default function Index() {
             required
             name="value"
             label={"Value"}
-            error={valErr}
+            error={valueErr}
           />
           <Playground.Submit label={"Submit"} />
         </Playground.Form>
