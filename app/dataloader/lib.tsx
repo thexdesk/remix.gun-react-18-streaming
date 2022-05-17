@@ -3,7 +3,7 @@ import { useLocation } from "remix";
 import invariant from "@remix-run/react/invariant";
 import jsesc from "jsesc";
 import Gun from "gun";
-import { useDeferedLoadData } from "./context";
+import { useDataLoader } from "./context";
 import { useIf, useSafeCallback } from "bresnow_utility-react-hooks";
 import { useGunStatic } from "~/lib/gun/hooks";
 import React from "react";
@@ -12,30 +12,19 @@ export { DataloaderProvider } from "./context";
  * @param {string} remix route path to load
  * @param {string} optional nodePath to load cached data from the browser's rad/ indexeddb
  */
-export function useDeferedLoaderData<T = any>(
-  routePath: string,
-  options?: Partial<{ cachePath: string }>
-) {
-  let dataloader = useDeferedLoadData();
+export function useDeferedLoaderData<T = any>(routePath: string) {
+  let dataloader = useDataLoader();
   const [cache] = useGunStatic(Gun);
-  let [cachedData, setCachedData] = React.useState<
-    Record<string, any> | undefined
-  >(undefined);
+  let [cached, setCachedData] = React.useState<Record<string, any> | undefined>(
+    undefined
+  );
   let { key } = useLocation();
-  useIf([!options?.cachePath, routePath.startsWith("/api/gun/")], () => {
-    let path = routePath.replace("/api/gun/", "");
-    cache.path(path).on((data: T) => {
+  useIf([key], () => {
+    cache.get(key).on((data: T) => {
       if (data) setCachedData(data);
     });
   });
 
-  useIf([options?.cachePath], () => {
-    invariant(options?.cachePath, "cachePath is required");
-    let path = options?.cachePath;
-    cache.path(path).on((data: T) => {
-      if (data) setCachedData(data);
-    });
-  });
   let defered = useMemo(() => {
     invariant(dataloader, "Context Provider is undefined for useGunFetcher");
     let defered = { resolved: false } as {
@@ -61,6 +50,7 @@ export function useDeferedLoaderData<T = any>(
   return {
     load(): T {
       if (typeof defered.value !== "undefined") {
+        cache.get(key).put(defered.value);
         return defered.value;
       }
       if (typeof defered.error !== "undefined") {
@@ -69,6 +59,10 @@ export function useDeferedLoaderData<T = any>(
 
       throw defered.promise;
     },
-    cachedData,
+    cachedData() {
+      if (cached) {
+        return cached;
+      }
+    },
   };
 }

@@ -7,19 +7,15 @@ import {
   useLoaderData,
   useActionData,
   useCatch,
-  Outlet,
 } from "remix";
 import { useDeferedLoaderData } from "~/dataloader/lib";
 import { useIf } from "bresnow_utility-react-hooks";
 import { LoadCtx } from "types";
-import { Card } from "~/components/Card";
 import Display from "~/components/DisplayHeading";
 import { useGunStatic } from "~/lib/gun/hooks";
 import FormBuilder from "~/components/FormBuilder";
-import SimpleSkeleton from "~/components/skeleton/SimpleSkeleton";
 import invariant from "@remix-run/react/invariant";
 
-const noop = () => {};
 type ErrObj = {
   path?: string;
   key?: string;
@@ -29,7 +25,7 @@ type ErrObj = {
 type LoadError = {
   error: ErrObj;
 };
-export let loader: LoaderFunction = async ({ params, request, context }) => {
+export let loader: LoaderFunction = async ({ request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
   let { graph } = RemixGunContext(Gun, request);
   let data;
@@ -40,7 +36,7 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
   }
   return json(data);
 };
-export let action: ActionFunction = async ({ params, request, context }) => {
+export let action: ActionFunction = async ({ request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
   let { formData } = RemixGunContext(Gun, request);
   let error: ErrObj = {};
@@ -67,29 +63,6 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   }
 };
 
-function WelcomeCard() {
-  let { title, pageText, pageTitle, src } = useLoaderData();
-  let img = { src, alt: "RemixGun" };
-  return (
-    <div
-      className="w-full mx-auto rounded-xl mt-5 p-5  relative"
-      style={{
-        minHeight: "320px",
-        minWidth: "420px",
-        maxWidth: "520px",
-      }}
-    >
-      <SectionTitle
-        heading={pageTitle}
-        description={pageText}
-        align={"center"}
-        color={"primary"}
-        showDescription={true}
-      />
-      <Card image={img} name={pageTitle} label={title} />
-    </div>
-  );
-}
 function SuspendedTest({ getData }: { getData(): Record<string, any> }) {
   function RenderedData() {
     let data = getData();
@@ -128,31 +101,38 @@ type LoadAction = {
   path: string;
   data: Record<string, string>;
 };
-export default function Index() {
+export default function BuilderRoute() {
   let action = useActionData<LoadAction | LoadError>(),
     error = action && (action as LoadError).error,
     ackData = action && (action as LoadAction).data,
-    path =
-      action && (action as LoadAction).path
-        ? (action as LoadAction).path.replace("/", ".")
-        : "no_path";
+    path = action && (action as LoadAction).path;
   const [gun] = useGunStatic(Gun);
   const ObjectBuilder = FormBuilder();
   useIf([ackData, !error], () => {
     invariant(ackData, "ackData is undefined");
+    invariant(path, "path is undefined");
     gun.path(path).put(ackData);
   });
   let testLoader = useDeferedLoaderData<any>(`/api/gun/${path}`);
   let { text, page_title } = useLoaderData();
   return (
     <>
-      <SectionTitle
-        heading={page_title}
-        description={text}
-        align={"center"}
-        color={"primary"}
-        showDescription={true}
-      />
+      <div
+        className="w-full mx-auto rounded-xl gap-4  p-4 relative"
+        style={{
+          minHeight: "320px",
+          minWidth: "420px",
+          maxWidth: "520px",
+        }}
+      >
+        <SectionTitle
+          heading={page_title}
+          description={text}
+          align={"center"}
+          color={"primary"}
+          showDescription={true}
+        />
+      </div>
       <div
         className="w-full mx-auto rounded-xl gap-4  p-4 relative"
         style={{

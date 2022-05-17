@@ -35,7 +35,7 @@ import {
   _GunRoot,
 } from "gun";
 import { useFetcher } from "remix";
-import { useGunStatic } from ".";
+import { useGunStatic, useRouteData } from ".";
 import { useIf } from "bresnow_utility-react-hooks";
 
 const GunContext = createContext<any>({
@@ -53,44 +53,57 @@ export const GunContextProvider = ({
   children: React.PropsWithChildren<any>;
   Gun: IGun;
 }) => {
-  const gunRef = useRef();
   const userRef = useRef();
   const certificateRef = useRef();
   const accessTokenRef = useRef<string>();
   const onAuthCbRef = useRef();
-  const [gun, SEA] = useGunStatic(Gun);
+  const { data } = useRouteData("/"),
+    opts = data.gunOpts;
+  const [gun, SEA] = useGunStatic(Gun, {
+    peers: data.gunOpts.peers,
+    localStorage: false,
+  });
   const fetcher = useFetcher();
 
   useIf([fetcher.type === "init", !fetcher.data], () => {
-    fetcher.load("/api/gun/token");
+    fetcher.load("/api/tokens");
   });
-  useIf([fetcher.type === "done", fetcher.data.token], () => {
-    accessTokenRef.current = fetcher.data.token;
-  });
-  useEffect(() => {
-    Gun.on("opt", function (this: IGunHookContext<_GunRoot>, ctx: _GunRoot) {
-      if ((ctx as any).once) return;
+  useIf(
+    [fetcher.type === "done", !fetcher.data.error, fetcher.data.token],
+    () => {
+      accessTokenRef.current = fetcher.data.token;
+    }
+  );
+  const user = gun.user();
+  useIf([fetcher.state ==="idle", !certificateRef.current], () => {
+    user.get("alias").once((alias: string) => {
+      fetcher.submit({alias});
+    })
 
-      ctx.on("out", function <
-        MessageExtension extends Partial<{
-          headers: { accessToken: string };
-          err: string;
-        }>,
-        MetaExtension extends Partial<_GunRoot>
-      >(this: IGunHookContext<GunHookMessageOut<MessageExtension, MetaExtension>>, msg: GunHookMessageOut<MessageExtension, MetaExtension>) {
-        const to = this.to;
-        // Adds headers for putm\
-        accessTokenRef.current = msg.headers?.accessToken;
-        to.next(msg); // pass to next middleware
-        if (fetcher.data.error) {
-          console.error(fetcher.data.error);
-        }
-      });
-    });
-  }, []);
+  });
+  // useEffect(() => {
+  //   Gun.on("opt", function (this: IGunHookContext<_GunRoot>, ctx: _GunRoot) {
+  //     if ((ctx as any).once) return;
+
+  //     ctx.on("out", function <
+  //       MessageExtension extends Partial<{
+  //         headers: { accessToken: string };
+  //         err: string;
+  //       }>,
+  //       MetaExtension extends Partial<_GunRoot>
+  //     >(this: IGunHookContext<GunHookMessageOut<MessageExtension, MetaExtension>>, msg: GunHookMessageOut<MessageExtension, MetaExtension>) {
+  //       const to = this.to;
+  //       // Adds headers for putm\
+  //       accessTokenRef.current = msg.headers?.accessToken;
+  //       to.next(msg); // pass to next middleware
+  //       if (fetcher.data.error) {
+  //         console.error(fetcher.data.error);
+  //       }
+  //     });
+  //   });
+  // }, []);
 
   // create user
-  const user = gun.user();
   useEffect(() => {
     gun.on("auth", (...args) => {
       if (!accessTokenRef.current) {
@@ -149,7 +162,7 @@ export const GunContextProvider = ({
   return (
     <GunContext.Provider
       value={{
-        getGun: () => gunRef.current,
+        getGun: () => gun,
         getUser: () => userRef.current,
         getCertificate: () => certificateRef.current,
         //   setCertificate: (v: undefined) => {

@@ -18,7 +18,7 @@ export let DataloaderProvider = ({
   return <context.Provider value={dataloader}>{children}</context.Provider>;
 };
 
-export let useDeferedLoadData = () => useContext(context);
+export let useDataLoader = () => useContext(context);
 
 export interface GunClientContext {
   (Gun: IGun): {

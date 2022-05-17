@@ -1,5 +1,5 @@
 import type { ChainCtx, RmxGunCtx, NodeValues } from "types";
-import type { GunOptions, GunUser, IGun, IGunChain, ISEAPair } from "gun/types";
+import type { GunOptions, GunUser, IGun, IGunChain, IGunInstance, ISEAPair } from "gun/types";
 import { destroySession, getSession } from "~/session.server";
 import { errorCheck } from "./lib/utils/helpers";
 import { redirect } from "remix";
@@ -53,7 +53,6 @@ export function RemixGunContext(Gun: IGun, request: Request) {
     }
     type T = any
     const SEA = Gun.SEA
-    const pair = SEA.pair, encrypt = SEA.encrypt, decrypt = SEA.decrypt, sign = SEA.sign, verify = SEA.verify, secret = SEA.secret, certify = SEA.certify;
 
     async function keyPairAuth(pair: ISEAPair) {
         let session = await getSession(request.headers.get("Cookie") ?? undefined);
@@ -76,21 +75,20 @@ export function RemixGunContext(Gun: IGun, request: Request) {
      */
     async function credentials(alias: string, password: string) {
         let session = await getSession(request.headers.get("Cookie"));
-        return new Promise((resolve, reject) => gun.user().auth(alias, password, async (ack) => {
-            if ((await aliasAvailable(alias))) {
-                try {
-                    let signUp = await createUser(alias, password)
-                    resolve(signUp)
-                } catch (error) {
-                    reject(error)
-                }
+        if ((await aliasAvailable(alias))) {
+            try {
+                await createUser(alias, password)
+            } catch (error) {
+                return error
             }
+        }
+        return new Promise((resolve, reject) => gun.user().auth(alias, password, async (ack) => {
             if (Object.getOwnPropertyNames(ack).includes('sea')) {
                 let sea = (ack as any).sea as ISEAPair
                 let userInfo = (ack as any).put as GunUser
                 session.set(`user_info`, userInfo)
                 session.set(`key_pair`, sea)
-                resolve({ alias: userInfo.alias, pub: userInfo.pub, epub: userInfo.epub });
+                resolve({ userInfo, sea });
             }
             if (errorCheck(ack)) {
                 let err = (ack as any).err as string
@@ -130,7 +128,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
     const graph: ChainCtx = {
         get: (path: string) => {
             let chainref: IGunChain<T>
-            chainref = (gun as any).path(`${path}`)
+            chainref = (gun as IGunInstance).path(`${path}`)
             return {
                 val: (opts) => new Promise((resolve, reject) =>
                     opts?.open ? chainref.open((data) => {
