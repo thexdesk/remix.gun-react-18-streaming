@@ -80,7 +80,8 @@ services:
       - DOMAIN=${DOMAIN:-rmx-gun.fltngmmth.com}
     networks:
       - traefik-public
-
+    volumes:
+      - radata:/app/radata
       #PEER DB
   peer:
     image: bresnow/rmx-gun:latest
@@ -110,10 +111,13 @@ services:
       - DOMAIN=${DOMAIN:-rmx-gun-peer.fltngmmth.com}
     networks:
       - traefik-public
+    volumes:
+      - peer-radata:/app/radata
 
 volumes:
   traefik-certs:
-  # peer1:
+  peer-radata:
+  radata:
 
 networks:
   traefik-public:

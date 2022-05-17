@@ -45,7 +45,6 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   let error: ErrObj = {};
   try {
     let { prop, value, path } = await formData();
-    console.log(path, prop, value, "prop, value");
 
     if (!/^(?![0-9])[a-zA-Z0-9$_]+$/.test(prop)) {
       error.key =

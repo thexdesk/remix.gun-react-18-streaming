@@ -15,9 +15,7 @@ This is my white-label boilerplate when building full stack apps. Using the Grap
 
 ## Demo
 
-Visit the [Demo](https://rmx-gun.fltngmmth.com). In another window visit the [Peer](https://rmx-gun-peer.fltngmmth.com). In the first window use the object builder form by entering the key and value. Refresh the peer window to find your mutation. 
-
-### NOTE: The demo containers are not deployed with persisiting data volumes. When a new container is deployed the data will be reset. 
+Visit the [Demo](https://rmx-gun.fltngmmth.com). In another window visit the [Peer](https://rmx-gun-peer.fltngmmth.com). In the first window use the object builder form by entering the key and value. Refresh the peer window to find your mutation.
 
 ## Development
 
@@ -29,4 +27,4 @@ npm run dev
 
 This starts your app in development mode, which will purge the server require cache when Remix rebuilds assets so you don't need a process manager restarting the express server.
 
-## It works but it's still in development. Not production ready.
+
