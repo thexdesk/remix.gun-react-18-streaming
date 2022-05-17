@@ -7,7 +7,6 @@ import {
   useLoaderData,
   useActionData,
   useCatch,
-  Outlet,
 } from "remix";
 import { useDeferedLoaderData } from "~/dataloader/lib";
 import { useIf } from "bresnow_utility-react-hooks";
@@ -16,12 +15,15 @@ import { Card } from "~/components/Card";
 import Display from "~/components/DisplayHeading";
 import { useGunStatic } from "~/lib/gun/hooks";
 import FormBuilder from "~/components/FormBuilder";
+import SimpleSkeleton from "~/components/skeleton/SimpleSkeleton";
+import invariant from "@remix-run/react/invariant";
 
 const noop = () => {};
 type ErrObj = {
-  _key?: string | undefined;
-  _value?: string | undefined;
-  _form?: string | undefined;
+  path?: string;
+  key?: string;
+  value?: string;
+  form?: string;
 };
 type LoadError = {
   error: ErrObj;
@@ -42,25 +44,24 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   let { formData } = RemixGunContext(Gun, request);
   let error: ErrObj = {};
   try {
-    let { prop, value } = await formData();
+    let { prop, value, path } = await formData();
+    console.log(path, prop, value, "prop, value");
 
     if (!/^(?![0-9])[a-zA-Z0-9$_]+$/.test(prop)) {
-      error._key =
+      error.key =
         "Invalid property name : Follow Regex Pattern /^(?![0-9])[a-zA-Z0-9$_]+$/";
     }
     if (typeof value !== "string" || value.length < 1 || value.length > 240) {
-      error._value =
+      error.value =
         "Property values must be greater than 1 and less than 240 characters";
     }
-
-    console.log({ [prop]: value }, "DATA");
 
     if (Object.values(error).length > 0) {
       return json<LoadError>({ error });
     }
-    return json({ [prop]: value });
+    return json({ path, data: { [prop]: value } });
   } catch (err) {
-    error._form = err as string;
+    error.form = err as string;
     return json<LoadError>({ error });
   }
 };
@@ -88,42 +89,59 @@ function WelcomeCard() {
     </div>
   );
 }
-function SuspendedTest({
-  getData,
-}: {
-  getData: () => any;
-  // error?: any;
-}) {
+function SuspendedTest({ getData }: { getData(): Record<string, any> }) {
   function RenderedData() {
     let data = getData();
-
+    if (data.error) {
+      return <></>;
+    }
+    let path = data._["#"];
     return (
-      <div>
-        <div className="grid grid-cols-1 gap-4 p-4">
-          <div className="col-span-1">
-            <h5>Node Metadata</h5>
-            <pre className=" bg-orange-300 text-primary rounded-md">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </div>
+      <div className="grid grid-cols-1 gap-4 p-4">
+        <div className="col-span-1">
+          <h5>
+            Fetched data at document path <pre>{path}</pre>
+          </h5>
+          {data &&
+            Object.entries(data).map((val) => {
+              let [key, value] = val;
+              if (key === "_") {
+                return;
+              }
+              return (
+                <div className="flex flex-row items-center space-y-5 justify-center space-x-5">
+                  <div className="w-1/3 p-5 rounded-md ">{key}</div>
+                  <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
+                    {`${value}`}
+                  </div>
+                </div>
+              );
+            })}
         </div>
-        {/* <pre>{JSON.stringify(data, null, 2)}</pre> */}
       </div>
     );
   }
   return <RenderedData />;
 }
-
+type LoadAction = {
+  path: string;
+  data: Record<string, string>;
+};
 export default function Index() {
-  let action = useActionData<Record<string, string> | LoadError>();
+  let action = useActionData<LoadAction | LoadError>(),
+    error = action && (action as LoadError).error,
+    ackData = action && (action as LoadAction).data,
+    path = action
+      ? (action as LoadAction).path.replace("/", ".")
+      : "posts.test";
   const [gun] = useGunStatic(Gun);
-  const Playground = FormBuilder();
-  useIf([action, !action?.error], () => {
-    gun.get("posts").get("test").put(action);
+  const ObjectBuilder = FormBuilder();
+  useIf([ackData, !error], () => {
+    invariant(ackData, "ackData is undefined");
+    gun.path(path).put(ackData);
   });
+  let testLoader = useDeferedLoaderData<any>(`/api/gun/${path}`);
 
-  let testLoader = useDeferedLoaderData<any>("/api/gun/pages");
-  let [keyErr, valErr] = Object.values(action?.error ?? {});
   return (
     <>
       <WelcomeCard />
@@ -135,7 +153,57 @@ export default function Index() {
           maxWidth: "520px",
         }}
       >
-        <Outlet />
+        <ObjectBuilder.Form method={"post"}>
+          <ObjectBuilder.Input
+            type="text"
+            required
+            name="path"
+            label={"Document Path"}
+            placeholder={"posts/test"}
+            error={error?.path}
+          />
+          <ObjectBuilder.Input
+            type="text"
+            required
+            name="prop"
+            label={"Key"}
+            error={error?.key}
+          />
+          <ObjectBuilder.Input
+            type="text"
+            required
+            name="value"
+            label={"Value"}
+            error={error?.value}
+          />
+          <ObjectBuilder.Submit label={"Submit"} />
+        </ObjectBuilder.Form>
+        <Suspense
+          fallback={
+            <div className="grid grid-cols-1 gap-4 p-4">
+              <div className="col-span-1">
+                <h5>Cached Data From Radisk/ IndexedDB</h5>
+                {testLoader.cachedData &&
+                  Object.entries(testLoader.cachedData).map((val) => {
+                    let [key, value] = val;
+                    if (key === "_") {
+                      return;
+                    }
+                    return (
+                      <div className="flex animate-pulse flex-row items-center space-y-5 justify-center space-x-5">
+                        <div className="w-1/3 p-5 rounded-md ">{key}</div>
+                        <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
+                          {`${value}`}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          }
+        >
+          <SuspendedTest getData={testLoader.load} />
+        </Suspense>
       </div>
     </>
   );
@@ -197,8 +265,7 @@ export function CatchBoundary() {
 }
 
 export function ErrorBoundary({ error }: { error: Error }) {
-  console.error(error.message);
-  console.trace(error.message);
+  console.error(error);
   return (
     <div className="min-h-screen py-4 flex flex-col justify-center items-center">
       <Display

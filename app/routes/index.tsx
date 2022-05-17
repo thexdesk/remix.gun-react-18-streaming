@@ -45,6 +45,7 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   let error: ErrObj = {};
   try {
     let { prop, value, path } = await formData();
+    console.log(path, prop, value, "prop, value");
 
     if (!/^(?![0-9])[a-zA-Z0-9$_]+$/.test(prop)) {
       error.key =
@@ -58,7 +59,7 @@ export let action: ActionFunction = async ({ params, request, context }) => {
     if (Object.values(error).length > 0) {
       return json<LoadError>({ error });
     }
-    return json({ path: path && path, data: { [prop]: value } });
+    return json({ path, data: { [prop]: value } });
   } catch (err) {
     error.form = err as string;
     return json<LoadError>({ error });
@@ -130,7 +131,7 @@ export default function Index() {
   let action = useActionData<LoadAction | LoadError>(),
     error = action && (action as LoadError).error,
     ackData = action && (action as LoadAction).data,
-    path = (action as LoadAction).path
+    path = action
       ? (action as LoadAction).path.replace("/", ".")
       : "posts.test";
   const [gun] = useGunStatic(Gun);
@@ -155,6 +156,7 @@ export default function Index() {
         <ObjectBuilder.Form method={"post"}>
           <ObjectBuilder.Input
             type="text"
+            required
             name="path"
             label={"Document Path"}
             placeholder={"posts/test"}
