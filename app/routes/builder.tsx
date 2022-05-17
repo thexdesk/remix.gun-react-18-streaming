@@ -7,6 +7,7 @@ import {
   useLoaderData,
   useActionData,
   useCatch,
+  Outlet,
 } from "remix";
 import { useDeferedLoaderData } from "~/dataloader/lib";
 import { useIf } from "bresnow_utility-react-hooks";
@@ -33,7 +34,7 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
   let { graph } = RemixGunContext(Gun, request);
   let data;
   try {
-    data = await graph.get("pages.index").val();
+    data = await graph.get("pages.builder").val();
   } catch (error) {
     data = { error };
   }
@@ -131,9 +132,10 @@ export default function Index() {
   let action = useActionData<LoadAction | LoadError>(),
     error = action && (action as LoadError).error,
     ackData = action && (action as LoadAction).data,
-    path = action
-      ? (action as LoadAction).path.replace("/", ".")
-      : "posts.test";
+    path =
+      action && (action as LoadAction).path
+        ? (action as LoadAction).path.replace("/", ".")
+        : "no_path";
   const [gun] = useGunStatic(Gun);
   const ObjectBuilder = FormBuilder();
   useIf([ackData, !error], () => {
@@ -141,10 +143,16 @@ export default function Index() {
     gun.path(path).put(ackData);
   });
   let testLoader = useDeferedLoaderData<any>(`/api/gun/${path}`);
-
+  let { text, page_title } = useLoaderData();
   return (
     <>
-      <WelcomeCard />
+      <SectionTitle
+        heading={page_title}
+        description={text}
+        align={"center"}
+        color={"primary"}
+        showDescription={true}
+      />
       <div
         className="w-full mx-auto rounded-xl gap-4  p-4 relative"
         style={{
@@ -178,33 +186,33 @@ export default function Index() {
           />
           <ObjectBuilder.Submit label={"Submit"} />
         </ObjectBuilder.Form>
-        <Suspense
-          fallback={
-            <div className="grid grid-cols-1 gap-4 p-4">
-              <div className="col-span-1">
-                <h5>Cached Data From Radisk/ IndexedDB</h5>
-                {testLoader.cachedData &&
-                  Object.entries(testLoader.cachedData).map((val) => {
-                    let [key, value] = val;
-                    if (key === "_") {
-                      return;
-                    }
-                    return (
-                      <div className="flex animate-pulse flex-row items-center space-y-5 justify-center space-x-5">
-                        <div className="w-1/3 p-5 rounded-md ">{key}</div>
-                        <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
-                          {`${value}`}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          }
-        >
-          <SuspendedTest getData={testLoader.load} />
-        </Suspense>
       </div>
+      <Suspense
+        fallback={
+          <div className="grid grid-cols-1 gap-4 p-4">
+            <div className="col-span-1">
+              <h5>Cached Data From Radisk/ IndexedDB</h5>
+              {testLoader.cachedData &&
+                Object.entries(testLoader.cachedData).map((val) => {
+                  let [key, value] = val;
+                  if (key === "_") {
+                    return;
+                  }
+                  return (
+                    <div className="flex animate-pulse flex-row items-center space-y-5 justify-center space-x-5">
+                      <div className="w-1/3 p-5 rounded-md ">{key}</div>
+                      <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
+                        {`${value}`}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        }
+      >
+        <SuspendedTest getData={testLoader.load} />
+      </Suspense>
     </>
   );
 }

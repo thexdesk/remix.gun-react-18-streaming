@@ -15,7 +15,7 @@ export const data = {
                 "og:url": `https://${process.env.DOMAIN}/`,
                 "og:site_name": "Remix.GUN | Boilerplate",
                 "og:locale": "en_US",
-                "twitter:card": "summary_large_image",
+                "twitter:card": "summary",
                 "twitter:site": "@bresnow",
                 "twitter:creator": "@bresnow",
                 "twitter:title": "Remix.GUN | Boilerplate",
@@ -29,10 +29,13 @@ export const data = {
 
         },
         index: {
-            pageTitle: "Remix.GUN | Document Builder Demo ",
+            page_title: "Remix.GUN | Boilerplate Demo",
             src: "/github/rmix-gun.png",
-            title: 'Click Here To Edit',
-            pageText: `Build the object by entering the path to the document, the key and value properties. The data object will be saved to the graph and asyncronously rendered. This application is peered to https://${process.env.PEER_DOMAIN}. The same data object will be available there also.`,
+            text: `Peer-to-peer full stack boilerplate using Remix.Run and GunDB.`,
+        },
+        builder: {
+            page_title: "Remix.GUN | Document Builder Demo ",
+            text: `Build the object by entering the path to the document, the key and value properties. The data object will be saved to the graph and asyncronously rendered. This application is peered to https://${process.env.PEER_DOMAIN}. The same data object will be available there also.`,
         },
     },
 }

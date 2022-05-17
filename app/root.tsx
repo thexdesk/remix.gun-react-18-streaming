@@ -61,6 +61,11 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
         link: "/login",
         id: "login",
       },
+      {
+        label: "Object Builder",
+        link: "/builder",
+        id: "builder",
+      },
     ],
   });
 };
