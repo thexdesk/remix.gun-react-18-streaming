@@ -46,9 +46,7 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   try {
     let { prop, value, path } = await formData();
     console.log(path, prop, value, "prop, value");
-    if (typeof path !== "string" || path.length === 0) {
-      error.path = "Path is required";
-    }
+
     if (!/^(?![0-9])[a-zA-Z0-9$_]+$/.test(prop)) {
       error.key =
         "Invalid property name : Follow Regex Pattern /^(?![0-9])[a-zA-Z0-9$_]+$/";
@@ -61,7 +59,7 @@ export let action: ActionFunction = async ({ params, request, context }) => {
     if (Object.values(error).length > 0) {
       return json<LoadError>({ error });
     }
-    return json({ path, data: { [prop]: value } });
+    return json({ path: path && path, data: { [prop]: value } });
   } catch (err) {
     error.form = err as string;
     return json<LoadError>({ error });
@@ -91,23 +89,19 @@ function WelcomeCard() {
     </div>
   );
 }
-function SuspendedTest({
-  getData,
-  error,
-}: {
-  getData: () => any;
-  error?: any;
-}) {
+function SuspendedTest({ getData }: { getData(): Record<string, any> }) {
   function RenderedData() {
     let data = getData();
-    let path = data._["#"];
     if (data.error) {
       return <></>;
     }
+    let path = data._["#"];
     return (
       <div className="grid grid-cols-1 gap-4 p-4">
         <div className="col-span-1">
-          <h5>Fetched Data At {path}</h5>
+          <h5>
+            Fetched data at document path <pre>{path}</pre>
+          </h5>
           {data &&
             Object.entries(data).map((val) => {
               let [key, value] = val;
@@ -116,13 +110,10 @@ function SuspendedTest({
               }
               return (
                 <div className="flex flex-row items-center space-y-5 justify-center space-x-5">
-                  {/* <div className="w-12 bg-gray-300 h-12 rounded-full "></div> */}
                   <div className="w-1/3 p-5 rounded-md ">{key}</div>
-                  {/* <div className="flex flex-col space-y-3"> */}
                   <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
                     {`${value}`}
                   </div>
-                  {/* </div> */}
                 </div>
               );
             })}
@@ -140,7 +131,7 @@ export default function Index() {
   let action = useActionData<LoadAction | LoadError>(),
     error = action && (action as LoadError).error,
     ackData = action && (action as LoadAction).data,
-    path = action
+    path = (action as LoadAction).path
       ? (action as LoadAction).path.replace("/", ".")
       : "posts.test";
   const [gun] = useGunStatic(Gun);
@@ -150,9 +141,7 @@ export default function Index() {
     gun.path(path).put(ackData);
   });
   let testLoader = useDeferedLoaderData<any>(`/api/gun/${path}`);
-  let keyErr = error ? error?.key : undefined;
-  let valueErr = error ? error?.value : undefined;
-  let pathErr = error ? error?.path : undefined;
+
   return (
     <>
       <WelcomeCard />
@@ -167,25 +156,24 @@ export default function Index() {
         <ObjectBuilder.Form method={"post"}>
           <ObjectBuilder.Input
             type="text"
-            required
             name="path"
             label={"Document Path"}
             placeholder={"posts/test"}
-            error={pathErr}
+            error={error?.path}
           />
           <ObjectBuilder.Input
             type="text"
             required
             name="prop"
             label={"Key"}
-            error={keyErr}
+            error={error?.key}
           />
           <ObjectBuilder.Input
             type="text"
             required
             name="value"
             label={"Value"}
-            error={valueErr}
+            error={error?.value}
           />
           <ObjectBuilder.Submit label={"Submit"} />
         </ObjectBuilder.Form>
@@ -202,24 +190,18 @@ export default function Index() {
                     }
                     return (
                       <div className="flex animate-pulse flex-row items-center space-y-5 justify-center space-x-5">
-                        {/* <div className="w-12 bg-gray-300 h-12 rounded-full "></div> */}
                         <div className="w-1/3 p-5 rounded-md ">{key}</div>
-                        {/* <div className="flex flex-col space-y-3"> */}
                         <div className="w-1/2 bg-gray-300 p-5 rounded-md flex-wrap">
                           {`${value}`}
                         </div>
-                        {/* </div> */}
                       </div>
                     );
                   })}
-
-                {/* )} */}
-                {/* // </pre> */}
               </div>
             </div>
           }
         >
-          <SuspendedTest getData={testLoader.load} error />
+          <SuspendedTest getData={testLoader.load} />
         </Suspense>
       </div>
     </>
