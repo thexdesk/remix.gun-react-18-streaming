@@ -31,10 +31,10 @@ type LoadError = {
 };
 export let loader: LoaderFunction = async ({ params, request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
-  let { graph } = RemixGunContext(Gun, request);
+  let { gun } = RemixGunContext(Gun, request);
   let data;
   try {
-    data = await graph.get("pages.index").val();
+    data = await gun.path("pages.index").then();
   } catch (error) {
     data = { error };
   }

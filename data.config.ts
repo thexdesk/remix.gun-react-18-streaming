@@ -15,7 +15,7 @@ export const data = {
                 "og:url": `https://${process.env.DOMAIN}/`,
                 "og:site_name": "Remix.GUN | Boilerplate",
                 "og:locale": "en_US",
-                "twitter:card": "summary",
+                "twitter:card": "summary_large_image",
                 "twitter:site": "@bresnow",
                 "twitter:creator": "@bresnow",
                 "twitter:title": "Remix.GUN | Boilerplate",

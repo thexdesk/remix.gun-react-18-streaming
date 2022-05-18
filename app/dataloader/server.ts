@@ -35,6 +35,16 @@ export function createServerDataloader(
       let result = await loader({ request, params, context })
       return json(result)
 
+    },
+    async graph(path: string) {
+      let { RemixGunContext } = context as LoadCtx;
+      let { gun } = RemixGunContext(Gun, request);
+      let data = await gun.path(path).then()
+      if (typeof data !== "undefined") {
+        return json(data)
+      }
+      return json({ error: "not found" })
     }
-  };
+
+  }
 }

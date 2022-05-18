@@ -21,7 +21,8 @@ type BlogNoSideBar = {
 export let action: ActionFunction = async ({ params, request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
   let { formData, user } = RemixGunContext(Gun, request);
-  let { alias, password } = await formData();
+  let { alias, password, authType } = await formData();
+  console.log(alias, password, authType);
   if (typeof alias !== "string") {
     return json({ error: "Invalid alias entry" });
   }
@@ -102,18 +103,18 @@ export default function Login() {
         <Login.Input type="text" name="alias" label="Alias" />
         <Login.Input type="password" name="password" label="Password" />
         <Login.Submit label={"Authenticate"} />
+        <Login.Switch
+          name={"authType"}
+          value={switchFlip.authType ? "password" : "keypair"}
+          state={switchFlip.authType}
+          onClick={(state: any) => {
+            switchSet({ ...state, authType: !switchFlip.authType });
+          }}
+          rounded
+          label={switchFlip.authType ? "Password" : "Keypair"}
+        />
       </Login.Form>
       <AuthResponse useActionData={useActionData} />
-      <Login.Switch
-        name={"authType"}
-        value={switchFlip.authType ? "password" : "keypair"}
-        state={switchFlip.authType}
-        onClick={(state: any) => {
-          switchSet({ ...state, authType: !switchFlip.authType });
-        }}
-        rounded
-        label={switchFlip.authType ? "Password" : "Keypair"}
-      />
     </div>
   );
 }

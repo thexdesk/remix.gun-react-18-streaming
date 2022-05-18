@@ -1,4 +1,9 @@
-import { Suspense } from "react";
+import {
+  ClassAttributes,
+  DetailedHTMLProps,
+  ScriptHTMLAttributes,
+  Suspense,
+} from "react";
 import Gun from "gun";
 import {
   ActionFunction,
@@ -15,6 +20,8 @@ import Display from "~/components/DisplayHeading";
 import { useGunStatic } from "~/lib/gun/hooks";
 import FormBuilder from "~/components/FormBuilder";
 import invariant from "@remix-run/react/invariant";
+import jsesc from "jsesc";
+import React from "react";
 
 type ErrObj = {
   path?: string;
@@ -27,10 +34,10 @@ type LoadError = {
 };
 export let loader: LoaderFunction = async ({ request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
-  let { graph } = RemixGunContext(Gun, request);
+  let { gun } = RemixGunContext(Gun, request);
   let data;
   try {
-    data = await graph.get("pages.builder").val();
+    data = await gun.path("pages.builder").then();
   } catch (error) {
     data = { error };
   }
@@ -115,6 +122,14 @@ export default function BuilderRoute() {
   });
   let testLoader = useDeferedLoaderData<any>(`/api/gun/${path}`);
   let { text, page_title } = useLoaderData();
+  let funkShun =
+    React.useRef<
+      DetailedHTMLProps<
+        ScriptHTMLAttributes<HTMLScriptElement>,
+        HTMLScriptElement
+      >
+    >();
+
   return (
     <>
       <div
@@ -193,6 +208,33 @@ export default function BuilderRoute() {
       >
         <SuspendedTest getData={testLoader.load} />
       </Suspense>
+      <script
+        key={"USE_FX"}
+        dangerouslySetInnerHTML={{
+          __html: `
+            ${jsesc(
+              (function () {
+                var gun = new Gun("http://localhost:3335/gun");
+                gun.on("hi", function (peer) {
+                  // console.log("hi", peer);
+                });
+                gun.on("bye", function (peer) {
+                  // console.log("bye", peer);
+                });
+                gun.on("put", function (data) {
+                  // console.log("put", data);
+                });
+                gun.on("get", function (data) {
+                  // console.log("get", data);
+                });
+                gun.on("auth", function (data) {
+                  console.log("auth", data);
+                });
+              })()
+            )}
+            `,
+        }}
+      />
     </>
   );
 }

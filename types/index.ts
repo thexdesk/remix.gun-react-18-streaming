@@ -1,26 +1,28 @@
-import type { GunOptions, IGun, IGunChain, IGunInstance } from "gun/types";
+import type { GunOptions, GunUser, IGun, IGunChain, IGunInstance, IGunUserInstance, ISEA } from "gun/types";
 import type { ISEAPair } from "gun/types";
 import type { Params } from "react-router";
 import type { ServerResponse } from "http";
+import { User } from "dockerode";
 export * from "./loaders"
 
 
 export type NodeValues = Record<string, string>
-export interface ChainCtx {
-    get: (path: string) => {
-        val: (opts?: { open: boolean }) => Promise<NodeValues | undefined>, put: (data: NodeValues | IGunChain<Record<string, any>, any>) => Promise<string>, set: (data: NodeValues | IGunChain<Record<string, any>, any>) => Promise<string>, map: (callback?: (args?: any) => any) => Promise<NodeValues[] | undefined>
-    },
-    options: (peers: string | string[], remove?: boolean) => any,
 
-}
 export interface UserAuth {
-    keyPairAuth: (pair: ISEAPair) => Promise<unknown>;
-    credentials: (alias: string, password: string) => Promise<unknown>;
+    keyPairAuth(pair: ISEAPair): Promise<unknown>;
+    credentials(alias: string, password: string): Promise<unknown>;
     logout(): Promise<Response>
+    getUserInstance(): Promise<IGunUserInstance>
+    getMasterUser(): IGunUserInstance
+    getSessionData(): Promise<{
+        user_info: GunUser;
+        key_pair: ISEAPair;
+    }>
 
 }
 
 export type LoadCtx = { RemixGunContext: RmxGunCtx, res: ServerResponse }
+
 export interface RmxGunCtx {
     (Gun: IGun, request: Request): {
         ENV: {
@@ -33,9 +35,10 @@ export interface RmxGunCtx {
             peers: string[];
             radisk: boolean;
             localStorage: boolean;
+            accessToken: Function;
         };
         gun: IGunInstance;
-        graph: ChainCtx;
+        SEA: ISEA
         user: UserAuth
         formData: () => Promise<Record<string, string>>;
     }

@@ -2,8 +2,9 @@ import { createContext, useContext } from "react";
 import type { FC } from "react";
 import type { IGun } from "gun";
 
-export type ClientContext = {
-  load: (route: string) => Promise<Response>;
+export interface ClientContext {
+  load(route: string): Promise<Response>;
+  graph(path: string): Promise<Response>;
 };
 
 let context = createContext<ClientContext | undefined>(undefined);
@@ -20,8 +21,3 @@ export let DataloaderProvider = ({
 
 export let useDataLoader = () => useContext(context);
 
-export interface GunClientContext {
-  (Gun: IGun): {
-    get(nodePath: string): Promise<Response>;
-  };
-}

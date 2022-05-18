@@ -1,12 +1,8 @@
-import type { ChainCtx, RmxGunCtx, NodeValues } from "types";
-import type { GunOptions, GunUser, IGun, IGunChain, IGunInstance, ISEAPair } from "gun/types";
+import type { GunUser, IGun, ISEAPair } from "gun/types";
 import { destroySession, getSession } from "~/session.server";
 import { errorCheck } from "./lib/utils/helpers";
 import { redirect } from "remix";
-import { Params } from "react-router";
 import { getDomain } from "./server";
-import { log } from "./lib/console-utils";
-import { parseJSON } from "./lib/parseJSON";
 export function RemixGunContext(Gun: IGun, request: Request) {
     // log((req), "Request")
     const ENV = {
@@ -18,7 +14,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
             priv: process.env.PRIV,
             epub: process.env.EPUB,
             epriv: process.env.EPRIV,
-        },
+        } as ISEAPair,
     };
 
     let peerList = {
@@ -35,11 +31,41 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         radisk: true,
     }
     let gun = Gun(gunOpts);
-    /**
-     * Upgrade from Gun's user api
-     * sets pubkey and epub as user_info and SEA keypair in session storage ENCRYPTED with remix session api
-     */
+    // Upgrade from Gun's user api sets pubkey and epub as user_info and SEA keypair in session storage ENCRYPTED with remix session api
 
+    async function getSessionData() {
+        let session = await getSession(request.headers.get("Cookie"));
+        let USER_KEYS = session.get("key_pair");
+        let USER_INFO = session.get("user_info");
+        if (!USER_INFO || !USER_KEYS) {
+            return {
+                user_info: null,
+                key_pair: null,
+            }
+        }
+        return { user_info: USER_INFO, key_pair: USER_KEYS }
+
+    }
+    async function getUserInstance() {
+        let session = await getSession(request.headers.get("Cookie"));
+        let USER_KEYS = session.get("key_pair");
+        if (!USER_KEYS) {
+            return null
+        }
+        return gun.user().auth(USER_KEYS, (ack) => {
+            if ((ack as any).err) {
+                throw new Error((ack as any).err);
+            }
+        });
+    }
+
+    function getMasterUser() {
+        return gun.user().auth(ENV.APP_KEY_PAIR, (ack) => {
+            if ((ack as any).err) {
+                throw new Error((ack as any).err);
+            }
+        });
+    }
 
     const aliasAvailable = (alias: string) => {
         return new Promise((resolve, reject) => {
@@ -54,6 +80,11 @@ export function RemixGunContext(Gun: IGun, request: Request) {
     type T = any
     const SEA = Gun.SEA
 
+    /**
+     * 
+     * @param pair 
+     * @returns 
+     */
     async function keyPairAuth(pair: ISEAPair) {
         let session = await getSession(request.headers.get("Cookie") ?? undefined);
         return new Promise((resolve, reject) => gun.user().auth(pair, (ack) => {
@@ -65,7 +96,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
                 let userInfo = (ack as any).put as GunUser
                 session.set(`user_info`, JSON.stringify(userInfo))
                 session.set(`key_pair`, sea)
-                resolve(userInfo)
+                resolve({ userInfo, sea })
             }
         }))
     }
@@ -120,95 +151,6 @@ export function RemixGunContext(Gun: IGun, request: Request) {
             },
         });
     }
-    /**
-     * * @param path - Path to the desired node. Each node label separated by forward slash  "path/to/the/node"
-     * @param keys - optional Keypair to authorize node access
-     * @returns - get: get data from node, map - map numerical sets as an array , put: update node with data with option to set data as a numerical set,
-     */
-    const graph: ChainCtx = {
-        get: (path: string) => {
-            let chainref: IGunChain<T>
-            chainref = (gun as IGunInstance).path(`${path}`)
-            return {
-                val: (opts) => new Promise((resolve, reject) =>
-                    opts?.open ? chainref.open((data) => {
-                        if (!data) {
-                            reject("No data found")
-                        }
-                        resolve(data)
-                    }) : chainref.once((data) => {
-                        if (!data) {
-                            reject("No data found")
-                        }
-                        resolve(data)
-                    })
-                ),
-                put: async (data: NodeValues | IGunChain<Record<string, any>, any>) => new Promise((resolve, reject) => {
-                    chainref.put(data, (ack: any) => {
-                        ack.ok ? resolve(`node ${path} -  values updated to ${data}`) : reject(ack.err);
-                    })
-                })
-                ,
-                set: async (data: NodeValues | IGunChain<Record<string, any>, any>) => new Promise((resolve, reject) => {
-                    chainref.set(data, (ack: any) => {
-                        ack.ok ? resolve(`node ${path} -  values updated to ${data}`) : reject(ack.err);
-                    })
-                }),
-                map: async (callback?: (args?: any) => any) => {
-
-                    let object = await (chainref as any).then();
-
-                    return new Promise(async (resolve, reject) => {
-                        if (!object) {
-                            reject("No data set");
-                        }
-                        let set: NodeValues[] = await Promise.all(
-                            Object.keys(object).map(async (key) => {
-                                // @ts-ignore
-                                let data = await chainref.get({ "#": key });
-                                return data
-                            })
-                        );
-                        if (!set) {
-                            reject("Error getting data - set is undefined");
-                        }
-                        if (callback) {
-                            let cbd = callback(set)
-                            resolve(cbd)
-                        }
-                        resolve([...new Set(set)]);
-
-                    })
-                },
-            }
-        },
-
-
-        /**
-         * add or remove peer addresses 
-         * @param peers 
-         * @param remove 
-         * @returns 
-         */
-        options: (peers: string | string[], remove?: boolean) => {
-            var peerOpt = (gun as any).back('opt.peers');
-            var mesh = (gun as any).back('opt.mesh');  // DAM
-            if (remove) {
-                if (Array.isArray(peers)) {
-                    peers.forEach((peer) => {
-                        mesh.bye(peer);
-                    });
-                } mesh.bye(peers);
-                return { message: `Peers ${peers} removed` };
-            }
-            // Ask local peer to connect to another peer. //
-            mesh.say({ dam: 'opt', opt: { peers: typeof peers === 'string' ? peers : peers.map((peer) => peer) } });
-            return { message: `Peers ${peers} added` };
-        }
-
-
-    }
-
 
 
 
@@ -216,8 +158,8 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         ENV,
         gunOpts,
         gun,
-        graph,
-        user: { keyPairAuth, credentials, logout },
+        SEA,
+        user: { keyPairAuth, credentials, logout, getUserInstance, getMasterUser, getSessionData },
         formData: async () => {
             let values: Record<string, string> | Record<string, FormDataEntryValue>
             if (request.headers.get("Content-Type") === "application/json") {

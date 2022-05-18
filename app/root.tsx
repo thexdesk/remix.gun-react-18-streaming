@@ -19,7 +19,8 @@ import React from "react";
 import { useRouteData } from "./lib/gun/hooks";
 import { getDomain } from "./server";
 import Display from "./components/DisplayHeading";
-
+import { parseJSON } from "./lib/parseJSON";
+import jsesc from "jsesc";
 export const links: LinksFunction = () => {
   return [
     { rel: "stylesheet", href: styles },
@@ -31,21 +32,19 @@ export const links: LinksFunction = () => {
 };
 export let loader: LoaderFunction = async ({ params, request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
-  let { ENV, graph } = RemixGunContext(Gun, request);
-  let meta;
-  try {
-    meta = await graph.get(`pages.root.meta`).val();
-  } catch (error) {}
-  let peerList = {
-    DOMAIN: getDomain(),
-    PEER: `https://${ENV.PEER_DOMAIN}/gun`,
-  };
+  let { ENV, gun, user, SEA } = RemixGunContext(Gun, request);
+  let dbCtx = user.getMasterUser();
+  let { user_info, key_pair } = await user.getSessionData();
+  let meta = await dbCtx.get("pages").get("root").get("meta").then();
+  let { radisk, peers, localStorage } = (gun as any).back("opt");
   let gunOpts = {
-    peers: [peerList.DOMAIN, peerList.PEER],
-    radisk: true,
-    localStorage: false,
+    peers: Object.keys(peers).map((key) => key),
+    radisk,
+    localStorage,
   };
-
+  if (typeof meta === "undefined") {
+    delete (meta as any)._;
+  }
   return json<RootLoaderData>({
     meta,
     gunOpts,
@@ -69,8 +68,9 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
     ],
   });
 };
+
 export type RootLoaderData = {
-  meta: Record<string, string> | undefined;
+  meta: Promise<Record<string, any>>;
   gunOpts: {
     peers: string[];
     radisk: boolean;
@@ -87,11 +87,8 @@ export type RootLoaderData = {
 
 /** Dynamically load meta tags from root loader*/
 export const meta: MetaFunction = () => {
-  const matches = useMatches();
-  let root = matches.find((match) => match.id === "root");
-  console.log(JSON.stringify(root?.data.ENV.APP_KEY_PAIR));
-  const metaDoc: NodeValues = root?.data?.meta;
-  return metaDoc;
+  const { meta } = useLoaderData();
+  return meta;
 };
 export type MenuLinks = {
   id?: string;
@@ -134,8 +131,13 @@ export const MainMenu = ({ data }: { data?: MenuLinks }) => {
   );
 };
 export default function App() {
-  let { links } = useLoaderData<RootLoaderData>();
-
+  let { links, ENV } = useLoaderData<RootLoaderData>();
+  function tester() {
+    var gun = new Gun("http://localhost:3335/gun");
+    gun.on("hi", function (peer) {
+      console.log("hi", peer);
+    });
+  }
   return (
     <html lang="en">
       <head>
@@ -150,6 +152,31 @@ export default function App() {
           <Outlet />
         </div>
         <ScrollRestoration />
+        <script
+          key={"USE_FX"}
+          dangerouslySetInnerHTML={{
+            __html: `
+            ${jsesc(
+              (function () {
+                var gun = new Gun("http://localhost:3335/gun");
+                gun.on("hi", function (peer) {
+                  // console.log("hi", peer);
+                });
+                gun.on("bye", function (peer) {
+                  // console.log("bye", peer);
+                });
+                gun.on("put", function (data) {
+                  // console.log("put", data);
+                });
+                gun.on("get", function (data) {
+                  // console.log("get", data);
+                });
+              })()
+            )}
+            `,
+          }}
+        />
+
         <Scripts />
         {process.env.NODE_ENV === "development" && <LiveReload />}
       </body>
