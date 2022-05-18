@@ -46,19 +46,6 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         return { user_info: USER_INFO, key_pair: USER_KEYS }
 
     }
-    async function getUserInstance() {
-        let session = await getSession(request.headers.get("Cookie"));
-        let USER_KEYS = session.get("key_pair");
-        if (!USER_KEYS) {
-            return null
-        }
-        return gun.user().auth(USER_KEYS, (ack) => {
-            if ((ack as any).err) {
-                throw new Error((ack as any).err);
-            }
-        });
-    }
-
     function getMasterUser() {
         return gun.user().auth(ENV.APP_KEY_PAIR, (ack) => {
             if ((ack as any).err) {
@@ -159,7 +146,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         gunOpts,
         gun,
         SEA,
-        user: { keyPairAuth, credentials, logout, getUserInstance, getMasterUser, getSessionData },
+        user: { keyPairAuth, credentials, logout, getMasterUser, getSessionData },
         formData: async () => {
             let values: Record<string, string> | Record<string, FormDataEntryValue>
             if (request.headers.get("Content-Type") === "application/json") {

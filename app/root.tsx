@@ -148,7 +148,7 @@ export default function App() {
       </head>
       <body className="bg-slate-200">
         <Header links={links} />
-        <div className="pt-16 grid md:grid-cols-2 sm:grid-cols-1 gap-8 overflow-visible">
+        <div className="pt-16 grid md:grid-cols-1 sm:grid-cols-1 gap-8 overflow-visible">
           <Outlet />
         </div>
         <ScrollRestoration />

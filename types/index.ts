@@ -10,9 +10,8 @@ export type NodeValues = Record<string, string>
 
 export interface UserAuth {
     keyPairAuth(pair: ISEAPair): Promise<unknown>;
-    credentials(alias: string, password: string): Promise<unknown>;
+    credentials(alias: string, password: string): Promise<{ userInfo: GunUser, sea: ISEAPair }>;
     logout(): Promise<Response>
-    getUserInstance(): Promise<IGunUserInstance>
     getMasterUser(): IGunUserInstance
     getSessionData(): Promise<{
         user_info: GunUser;
