@@ -75,7 +75,6 @@ function WelcomeCard() {
       style={{
         minHeight: "320px",
         minWidth: "420px",
-        maxWidth: "520px",
       }}
     >
       <SectionTitle

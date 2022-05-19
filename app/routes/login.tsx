@@ -4,11 +4,6 @@ import Display from "~/components/DisplayHeading";
 import { LoadCtx } from "types";
 import FormBuilder from "~/components/FormBuilder";
 import React from "react";
-import {
-  activeTestAccount,
-  createTestAccount,
-} from "~/lib/stellar/create-pair";
-import { loadAccount } from "~/lib/stellar/load-account";
 import { Account } from "~/lib/stellar";
 import { gun } from "~/server";
 
