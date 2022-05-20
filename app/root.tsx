@@ -35,14 +35,8 @@ type StateMachineTest = Partial<{
   isA: boolean;
   test: string;
 }>;
-
-export let loader: LoaderFunction = async ({ params, request, context }) => {
-  let state: StateMachineTest = {
-    thisOne: {},
-    isA: true,
-    test: "",
-  };
-  const dispatcher = (
+export function StateMachine() {
+  return function dispatcher(
     state: StateMachineTest,
     {
       type,
@@ -50,10 +44,11 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
     }: {
       type: "THIS" | "ISA" | "TEST";
     } & StateMachineTest
-  ) => {
+  ) {
     function toggle(is_a: StateMachineTest["isA"]) {
       return !is_a;
     }
+
     switch (type) {
       case "THIS":
         if (!values?.thisOne) {
@@ -62,20 +57,37 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
         let value;
         for (let key in values.thisOne) {
           value = values.thisOne[key];
-          return { ...state, thisOne: { [key]: value } };
+          state = { ...state, thisOne: { [key]: value } };
         }
 
       case "ISA": {
-        return { ...state, isA: toggle(state.isA) };
+        state = { ...state, isA: toggle(state.isA) };
       }
       case "TEST": {
-        return { ...state, test: values?.test };
+        state = { ...state, test: values?.test };
       }
-      default: {
-        return state;
-      }
+      default:
+        {
+          state = { ...state };
+        }
+        const dispatch = ({
+          type,
+          ...values
+        }: {
+          type: "THIS" | "ISA" | "TEST";
+        } & StateMachineTest) => dispatcher(state, { type, ...values });
+        return { state, dispatch };
     }
   };
+}
+
+export let loader: LoaderFunction = async ({ params, request, context }) => {
+  let state: StateMachineTest = {
+    thisOne: {},
+    isA: true,
+    test: "",
+  };
+
   let { RemixGunContext } = context as LoadCtx;
   let { ENV, gun, auth, SEA } = RemixGunContext(Gun, request);
   let app = auth.getMasterUser(),
@@ -83,20 +95,21 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
   if (key_pair) {
     let user = gun.user().auth(key_pair);
   }
+  let dispatcher = StateMachine();
   let one = dispatcher(state, { type: "ISA" });
-  console.log("one", one);
-  let rwo = dispatcher(one, { type: "ISA" });
-  console.log("rwo", rwo);
-  let free = dispatcher(rwo, {
+  console.log("one", one.state);
+  let two = one.dispatch({ type: "ISA" });
+  console.log("rwo", two.state);
+  let free = two.dispatch({
     type: "THIS",
     thisOne: { TAKE: "FIREY MALLIBU" },
   });
-  console.log("free", free);
-  let fou = dispatcher(free, {
+  console.log("free", free.state);
+  let fou = free.dispatch({
     type: "TEST",
     test: "WINDEEEGOOOOO",
   });
-  console.log("fou", fou);
+  console.log("fou", fou.state);
   let meta = await app.get("pages").get("root").get("meta").then();
   let { radisk, peers, localStorage } = (gun as any).back("opt");
   let gunOpts = {

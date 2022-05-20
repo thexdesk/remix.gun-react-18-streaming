@@ -1,6 +1,6 @@
 import { ISEAPair } from "gun/types";
 import React from "react";
-import { Form, FormProps, useFetcher } from "remix";
+import { FormProps, useFetcher } from "remix";
 function Lock() {
   return (
     <svg
@@ -59,7 +59,6 @@ export default function BrowserWindow({
   FormProps) {
   const [loading, setLoading] = React.useState(true);
   const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
-  // let data = onLoad();
   let fetcher = useFetcher();
   return (
     <div className="p-8 w-full h-full flex items-center justify-center">
