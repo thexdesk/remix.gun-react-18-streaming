@@ -38,10 +38,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         let USER_KEYS = session.get("key_pair");
         let USER_INFO = session.get("user_info");
         if (!USER_INFO || !USER_KEYS) {
-            return {
-                user_info: undefined,
-                key_pair: undefined,
-            }
+            return
         }
         return { user_info: USER_INFO, key_pair: USER_KEYS }
 
@@ -72,18 +69,22 @@ export function RemixGunContext(Gun: IGun, request: Request) {
      * @param pair 
      * @returns 
      */
-    async function keyPairAuth(pair: ISEAPair) {
-        let session = await getSession(request.headers.get("Cookie") ?? undefined);
+    async function keyPairAuth(pair: ISEAPair, cookie?: boolean) {
+        let session = await getSession(request.headers.get("Cookie"));
         return new Promise((resolve, reject) => gun.user().auth(pair, (ack) => {
             if (errorCheck(ack)) {
                 let err = (ack as any).err as string
                 reject(err)
             } else {
-                let sea = (ack as any).sea as ISEAPair
-                let userInfo = (ack as any).put as GunUser
-                session.set(`user_info`, JSON.stringify(userInfo))
-                session.set(`key_pair`, sea)
-                resolve({ userInfo, sea })
+                if (cookie) {
+                    let sea = (ack as any).sea as ISEAPair
+                    let userInfo = (ack as any).put as GunUser
+                    session.set(`user_info`, JSON.stringify(userInfo))
+                    session.set(`key_pair`, sea)
+                    resolve({ userInfo, sea })
+                } else {
+                    resolve(undefined)
+                }
             }
         }))
     }

@@ -21,6 +21,10 @@ import React from "react";
 import Display from "./components/DisplayHeading";
 import jsesc from "jsesc";
 import CNXTLogo from "./components/svg/logos/CNXT";
+import { getSession } from "./session.server";
+import { errorCheck } from "./lib/utils/helpers";
+import FMLogo from "./components/svg/logos/FltngMmth";
+import { Lock } from "./components/Browser";
 export const links: LinksFunction = () => {
   return [
     { rel: "stylesheet", href: styles },
@@ -30,86 +34,68 @@ export const links: LinksFunction = () => {
     },
   ];
 };
-type StateMachineTest = Partial<{
-  thisOne: Record<string, any>;
-  isA: boolean;
-  test: string;
-}>;
-export function StateMachine() {
+type StateMachineInit<T> = T;
+export function StateMachine<T, ActionType>(
+  handlers: Map<ActionType, (state: StateMachineInit<T>) => StateMachineInit<T>>
+) {
   return function dispatcher(
-    state: StateMachineTest,
+    state: StateMachineInit<T>,
     {
       type,
-      ...values
     }: {
-      type: "THIS" | "ISA" | "TEST";
-    } & StateMachineTest
+      type: ActionType;
+    }
   ) {
-    function toggle(is_a: StateMachineTest["isA"]) {
-      return !is_a;
-    }
+    let handle = handlers.get(type);
 
-    switch (type) {
-      case "THIS":
-        if (!values?.thisOne) {
-          throw new Error("Missing thisOne");
-        }
-        let value;
-        for (let key in values.thisOne) {
-          value = values.thisOne[key];
-          state = { ...state, thisOne: { [key]: value } };
-        }
-
-      case "ISA": {
-        state = { ...state, isA: toggle(state.isA) };
-      }
-      case "TEST": {
-        state = { ...state, test: values?.test };
-      }
-      default:
-        {
-          state = { ...state };
-        }
-        const dispatch = ({
-          type,
-          ...values
-        }: {
-          type: "THIS" | "ISA" | "TEST";
-        } & StateMachineTest) => dispatcher(state, { type, ...values });
-        return { state, dispatch };
-    }
+    handle ? (state = handle(state)) : null;
+    const dispatch = ({
+      type,
+      payload,
+    }: {
+      type: ActionType;
+      payload?: StateMachineInit<T>;
+    }) => dispatcher({ ...state, payload }, { type });
+    return { state, dispatch };
   };
 }
 
+const ACTION = { TOGGLE: "TOGGLE", RECORD: "RECORD" };
+type ActionType = typeof ACTION.TOGGLE | typeof ACTION.RECORD;
+type StateType = Partial<{ toggle: boolean; record: Record<string, string> }>;
+export let handler = new Map<ActionType, (state: StateType) => StateType>([
+  [ACTION.TOGGLE, (state) => ({ ...state, toggle: !state.toggle })],
+  [
+    ACTION.RECORD,
+    (state) => {
+      return state;
+    },
+  ],
+]);
 export let loader: LoaderFunction = async ({ params, request, context }) => {
-  let state: StateMachineTest = {
-    thisOne: {},
-    isA: true,
-    test: "",
-  };
-
   let { RemixGunContext } = context as LoadCtx;
   let { ENV, gun, auth, SEA } = RemixGunContext(Gun, request);
   let app = auth.getMasterUser();
-  //   { user_info, key_pair } = await auth.getSessionData();
-  // if (key_pair) {
-  //   let user = gun.user().auth(key_pair);
-  // }
-  let dispatcher = StateMachine();
-  let one = dispatcher(state, { type: "ISA" });
-  console.log("one", one.state);
-  let two = one.dispatch({ type: "ISA" });
-  console.log("rwo", two.state);
-  let free = two.dispatch({
-    type: "THIS",
-    thisOne: { TAKE: "FIREY MALLIBU" },
+  let session = await getSession(request.headers.get("Cookie"));
+  let USER_KEYS = session.get("key_pair");
+  let USER_INFO = session.get("user_info");
+  if (USER_KEYS && USER_INFO) {
+    try {
+      await auth.keyPairAuth(USER_KEYS);
+    } catch (error) {}
+  }
+
+  let init = StateMachine(handler);
+  let first = init({ toggle: true }, { type: ACTION.TOGGLE });
+  console.log(first.state, "STATE_MACHINE_TOGGLE_FALSE");
+  let second = first.dispatch({ type: ACTION.TOGGLE });
+  console.log(second.state, "STATE_MACHINE_TOGGLE_TRUE");
+  let record = second.dispatch({
+    type: ACTION.RECORD,
+    payload: { record: { test: "testikleeez" } },
   });
-  console.log("free", free.state);
-  let fou = free.dispatch({
-    type: "TEST",
-    test: "WINDEEEGOOOOO",
-  });
-  console.log("fou", fou.state);
+  console.log(record.state, "STATE_MACHINE_RECORD");
+  console.log(first.state, "STATE_MACHINE_CHECK");
   let meta = await app.get("pages").get("root").get("meta").then();
   let { radisk, peers, localStorage } = (gun as any).back("opt");
   let gunOpts = {
@@ -122,6 +108,7 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
     meta,
     gunOpts,
     ENV,
+    user: {},
   };
 
   return json(DATA);
@@ -169,23 +156,23 @@ export let handle = {
       icon: "M12.9 14.32a8 8 0 011.41-9.94l-1.42-1.42a6 6 0 00-9.18 9.19l1.42 1.42a8 8 0 01-9.94 1.42zM21.71 11.29A16 16 0 0112.9 20.32l-1.42-1.42a14 14 0 00-19.42-19.42l1.42-1.42a16 16 0 0121.71 11.29z",
     },
     {
-      label: "test1",
-      link: "/builder",
+      label: "CNXT",
+      link: "/cnxt",
       id: "builder",
       icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z",
     },
-    {
-      label: "test2",
-      link: "/builder",
-      id: "builder",
-      icon: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10M9 21h6",
-    },
-    {
-      label: "test3",
-      link: "/builder",
-      id: "builder",
-      icon: "M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
-    },
+    // {
+    //   label: "test2",
+    //   link: "/builder",
+    //   id: "builder",
+    //   icon: "M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10M9 21h6",
+    // },
+    // {
+    //   label: "test3",
+    //   link: "/builder",
+    //   id: "builder",
+    //   icon: "M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+    // },
     {
       label: "Object Builder",
       link: "/builder",
@@ -262,7 +249,7 @@ export default function App() {
   let matches = useMatches();
   let root = matches.find((match) => match.pathname === "/"),
     links = root?.handle?.links;
-
+  let cnxt = matches.find((match) => match.pathname === "/cnxt");
   const [ofcanvasOpen, ofcanvasDispatch] = React.useReducer(reduce, {
     menu_close: false,
     menu_collapse: false,
@@ -278,16 +265,16 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <div className="h-screen flex overflow-hidden bg-gray-100">
+        <div className="h-screen flex overflow-hidden bg-cnxt_black">
           <div
             className={`${
               !!ofcanvasOpen.menu_close ? "flex" : "hidden"
             } transition-all duration-200 md:flex md:flex-shrink-0`}
           >
-            <div className="flex flex-col w-64">
-              <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gray-900">
+            <div className="flex flex-col max-w-64 min-w-60">
+              <div className="flex items-center flex-shrink-0 px-4 py-2 bg-cnxt_navy">
                 {" "}
-                <CNXTLogo />
+                {cnxt ? <CNXTLogo /> : <FMLogo />}
               </div>
               <div className="h-0 flex-1 flex flex-col overflow-y-auto">
                 {" "}
@@ -296,7 +283,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex flex-col w-0 flex-1 overflow-hidden">
-            <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
+            <div className="relative z-10 flex-shrink-0 flex h-16 bg-primary-70 shadow">
               <button
                 onClick={() => ofcanvasDispatch({ type: "MENU_CLOSE" })}
                 className="px-4 z-20 border-r border-gray-200 text-gray-500 focus:outline-none focus:bg-gray-100 focus:text-gray-600 md:hidden"
@@ -343,6 +330,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
                 <div className="ml-4 flex items-center md:ml-6">
                   <button className="p-1 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:shadow-outline focus:text-gray-500">
                     <svg

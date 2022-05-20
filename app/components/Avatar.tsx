@@ -1,40 +1,35 @@
-import React from 'react';
-import { Link } from 'remix';
+import React from "react";
+import { Link } from "remix";
 
 interface Props {
   withBorder?: boolean;
   withInfo?: boolean;
   img?: string;
-  size?: 'small' | 'normal' | 'big' | 'monster';
-  type?: 'square' | 'rounded' | 'full';
+  size?: "small" | "normal" | "big" | "monster";
+  type?: "square" | "rounded" | "full";
   to?: string;
 }
-const Avatar = ({ withBorder, size, withInfo, type, img, to }: Props) => {
-  let sizeClasses = 'h-16 w-16';
-  if (size && size !== 'normal') {
-    sizeClasses = size === 'small' ? 'h-10 w-10' : 'h-20 w-20';
-    if (size === 'monster') {
-      sizeClasses = 'h-40 w-40';
-    }
-  }
+function Avatar({ src }: { src: string }) {
+  const [loading, setLoading] = React.useState(true);
 
-  let roundedClasses = 'rounded-full';
-  if (type && type !== 'full') {
-    roundedClasses = type === 'square' ? '' : 'rounded-lg';
-  }
   return (
-    <Link to={`${to}`} className="block relative">
+    <div className="relative rounded-full w-full h-full overflow-hidden shadow">
       <img
-        alt="profil"
-        src={img || '/images/person/1.jpg'}
-        className={`mx-auto object-cover ${roundedClasses} ${sizeClasses} ${
-          withBorder ? ' border-2 border-white dark:border-gray-800' : ''
+        alt="Avatar"
+        src={src}
+        width="256"
+        height="256"
+        className={`w-full h-auto transition-opacity duration-200 ${
+          loading ? "opacity-0" : "opacity-100"
         }`}
+        onLoad={() => {
+          setLoading(false);
+        }}
       />
-      {withInfo && (
-        <span className="absolute w-3 border-2 left-1/2 -bottom-2 transform -translate-x-1/2 border-white h-3 bg-green-500 rounded-full"></span>
+      {loading && (
+        <div className="absolute w-full h-full top-0 animate-pulse bg-gray-100 dark:bg-gray-900" />
       )}
-    </Link>
+    </div>
   );
-};
+}
 export default Avatar;

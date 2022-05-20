@@ -33,6 +33,11 @@ export const data = {
             src: "/github/rmix-gun.png",
             text: `Peer-to-peer full stack boilerplate using Remix.Run and GunDB.`,
         },
+        cnxt: {
+            page_title: "CNXT Dynamic Namespaces",
+            src: "/images/cnxt/splash.png",
+            text: `Cryptographically hash tagged namespaces for dynamic content. Peer to peer content management and service discovery.`,
+        },
         builder: {
             page_title: "Remix.GUN | Document Builder Demo ",
             text: `Build the object by entering the path to the document, the key and value properties. The data object will be saved to the graph and asyncronously rendered. This application is peered to https://${process.env.PEER_DOMAIN}. The same data object will be available there also.`,

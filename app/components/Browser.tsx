@@ -1,7 +1,7 @@
 import { ISEAPair } from "gun/types";
 import React from "react";
-import { FormProps, useFetcher } from "remix";
-function Lock() {
+import { Form, FormProps, useFetcher } from "remix";
+export function Lock() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -20,7 +20,7 @@ function Lock() {
   );
 }
 
-function Refresh() {
+export function Refresh() {
   return (
     <button type="submit" className="color-transparent">
       <svg
@@ -70,7 +70,7 @@ export default function BrowserWindow({
             <div className="bg-green-500 m-1 w-3 h-3 rounded-full" />
           </div>
           <div className="w-full flex items-center justify-center absolute left-0">
-            <fetcher.Form
+            <Form
               method="post"
               action={props.action}
               onSubmit={
@@ -99,7 +99,7 @@ export default function BrowserWindow({
                   <Refresh />
                 </span>
               </div>
-            </fetcher.Form>
+            </Form>
           </div>
         </div>
         <div className="w-full h-full relative">
