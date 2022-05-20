@@ -170,7 +170,7 @@ export default function Login() {
     authType: true,
   });
   return (
-    <section className="max-w-screen-xl bg-cnxt_blue px-4 py-12 mx-auto sm:py-16 sm:px-6 lg:px-8 lg:py-20">
+    <section className="max-w-screen-xl bg-green-500 dark:bg-gray-800 px-4 py-12 mx-auto sm:py-16 sm:px-6 lg:px-8 lg:py-20">
       <AuthResponse useActionData={useActionData} />
       <div className="overflow-hidden shadow-lg rounded-lg relative  mb-6 w-64 m-auto">
         <img
@@ -240,11 +240,11 @@ export default function Login() {
         </button>
       </div>
 
-      <Login.Form method={"post"}>
+      {/* <Login.Form method={"post"}>
         <Login.Input type="text" name="alias" label="Alias" />
         <Login.Input type="password" name="password" label="Password" />
-        <Login.Submit label={"Authenticate"} />
-        {/* <Login.Switch
+        <Login.Submit label={"Authenticate"} /> */}
+      {/* <Login.Switch
           name={"authType"}
           value={switchFlip.authType ? "password" : "keypair"}
           state={switchFlip.authType}
@@ -254,7 +254,7 @@ export default function Login() {
           rounded
           label={switchFlip.authType ? "Password" : "Keypair"}
         /> */}
-      </Login.Form>
+      {/* </Login.Form> */}
       <UserInfoForm />
     </section>
   );

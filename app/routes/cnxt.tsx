@@ -7,6 +7,8 @@ import {
   useLoaderData,
   useActionData,
   useCatch,
+  AppData,
+  Link,
 } from "remix";
 import { useDeferedLoaderData } from "~/dataloader/lib";
 import { useIf } from "bresnow_utility-react-hooks";
@@ -75,6 +77,15 @@ export default function CNXTRoute() {
   let img = { src, alt: "RemixGun" };
   return (
     <>
+      {/* <BrowserWindow namespace={"https://justtagit.io"} /> */}
+      <Link to={"services"}>
+        <button
+          type="button"
+          className="bg-gray-800 py-2 px-4 text-white rounded-lg hover:bg-gray-700 active:bg-gray-600"
+        >
+          Services
+        </button>
+      </Link>
       <SectionTitle
         heading={page_title}
         description={text}
@@ -84,10 +95,27 @@ export default function CNXTRoute() {
         image={img}
         node={<Tag color={"gray"} filled={false} label="#JUSTTAGIT" />}
       />
-      <BrowserWindow namespace={"https://justtagit.io"} />
-
+      {/* <DiagonalSection useLoaderData={useLoaderData} /> */}
       <AppWindow />
     </>
+  );
+}
+export function DiagonalSection({
+  useLoaderData,
+}: {
+  useLoaderData<T = AppData>(): T;
+}) {
+  let { text, page_title, src } = useLoaderData();
+  let img = { src, alt: "RemixGun" };
+  return (
+    <div className="py-8 w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-64">
+        <div className="absolute left-0 top-0 w-full h-full -z-10 transform-gpu -skew-y-6 bg-gradient-to-r from-cnxt_red via-cnxt_blue to-cnxt_navy" />
+        <div className="w-full h-full flex flex-col items-center justify-center">
+          <span className="text-xl text-white z-10">{page_title}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 

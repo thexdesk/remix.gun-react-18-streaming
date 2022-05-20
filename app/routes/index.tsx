@@ -7,6 +7,7 @@ import {
   useLoaderData,
   useActionData,
   useCatch,
+  Outlet,
 } from "remix";
 import { useDeferedLoaderData } from "~/dataloader/lib";
 import { useIf } from "bresnow_utility-react-hooks";
@@ -104,24 +105,10 @@ export default function Index() {
 }
 export function AppWindow() {
   return (
-    <div className="p-8 w-full h-full flex items-center justify-center">
-      <div className="shadow-lg w-full flex items-start justify-start flex-col border dark:border-gray-800 rounded-lg">
-        <div className="w-full flex items-center justify-start relative p-1 border-b dark:border-gray-800">
-          <div className="p-1 flex items-center justify-center">
-            <div className="bg-red-500 m-1 w-3 h-3 rounded-full" />
-            <div className="bg-yellow-500 m-1 w-3 h-3 rounded-full" />
-            <div className="bg-green-500 m-1 w-3 h-3 rounded-full" />
-          </div>
-          <div className="w-full flex items-center justify-center absolute left-0">
-            <span className="font-sans text-xs text-gray-500 dark:text-gray-400">
-              Hello World
-            </span>
-          </div>
-        </div>
-        <div className="">
-          <div className="p-4">
-            <h1>Hello World</h1>
-          </div>
+    <div className="p-8 w-full h-full flex items-center justify-center rounded-lg">
+      <div className="shadow-lg w-full flex items-start justify-start flex-col  rounded-lg">
+        <div className="w-full mx-auto rounded-lg">
+          <Outlet />
         </div>
       </div>
     </div>
@@ -269,7 +256,7 @@ export const SectionTitle = ({
           </p>
         </div>
       </div> */}
-      <div className="w-52 mx-auto mt-4 p-4 flex">
+      {/* <div className="w-52 mx-auto mt-4 p-4 flex">
         <button
           type="button"
           disabled
@@ -277,7 +264,7 @@ export const SectionTitle = ({
         >
           Just Tag It
         </button>
-      </div>
+      </div> */}
       <div
         className="w-full mx-auto rounded-xl gap-4  p-4 relative"
         style={{
