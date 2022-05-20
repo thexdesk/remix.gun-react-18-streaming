@@ -90,11 +90,11 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
 
   let { RemixGunContext } = context as LoadCtx;
   let { ENV, gun, auth, SEA } = RemixGunContext(Gun, request);
-  let app = auth.getMasterUser(),
-    { user_info, key_pair } = await auth.getSessionData();
-  if (key_pair) {
-    let user = gun.user().auth(key_pair);
-  }
+  let app = auth.getMasterUser();
+  //   { user_info, key_pair } = await auth.getSessionData();
+  // if (key_pair) {
+  //   let user = gun.user().auth(key_pair);
+  // }
   let dispatcher = StateMachine();
   let one = dispatcher(state, { type: "ISA" });
   console.log("one", one.state);
