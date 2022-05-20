@@ -39,8 +39,8 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         let USER_INFO = session.get("user_info");
         if (!USER_INFO || !USER_KEYS) {
             return {
-                user_info: null,
-                key_pair: null,
+                user_info: undefined,
+                key_pair: undefined,
             }
         }
         return { user_info: USER_INFO, key_pair: USER_KEYS }
@@ -119,10 +119,8 @@ export function RemixGunContext(Gun: IGun, request: Request) {
    create user with alias and password then authenticate.
      */
     async function createUser(alias: string, password: string) {
-        return new Promise((resolve, reject) => gun.user().create(alias, password, async (ack) => {
-            if (!errorCheck(ack)) {
-                resolve(ack)
-            } else {
+        return new Promise((_resolve, reject) => gun.user().create(alias, password, async (ack) => {
+            if (errorCheck(ack)) {
                 let err = (ack as any).err as string
                 reject(err)
             }
@@ -146,7 +144,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         gunOpts,
         gun,
         SEA,
-        user: { keyPairAuth, credentials, logout, getMasterUser, getSessionData },
+        auth: { keyPairAuth, credentials, logout, getMasterUser, getSessionData },
         formData: async () => {
             let values: Record<string, string> | Record<string, FormDataEntryValue>
             if (request.headers.get("Content-Type") === "application/json") {
@@ -195,6 +193,6 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         //         });
         //     }
         // },
-    }
+    };
 
 }

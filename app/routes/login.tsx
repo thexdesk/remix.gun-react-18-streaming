@@ -6,6 +6,7 @@ import FormBuilder from "~/components/FormBuilder";
 import React from "react";
 import { Account } from "~/lib/stellar";
 import { gun } from "~/server";
+import jsesc from "jsesc";
 
 type BlogNoSideBar = {
   sectionTitle: {
@@ -22,7 +23,7 @@ type BlogNoSideBar = {
 
 export let action: ActionFunction = async ({ params, request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
-  let { formData, user } = RemixGunContext(Gun, request);
+  let { formData, auth } = RemixGunContext(Gun, request);
   let { alias, password, authType } = await formData();
   console.log(alias, password, authType);
   if (typeof alias !== "string") {
@@ -36,23 +37,23 @@ export let action: ActionFunction = async ({ params, request, context }) => {
     sea: ISEAPair;
   };
   try {
-    credentials = await user.credentials(alias, password);
+    credentials = await auth.credentials(alias, password);
   } catch (error) {
     return json({ error });
   }
   let { userInfo, sea } = credentials,
     { alias: _alias, pub } = userInfo;
 
-  let _user = gun.user().auth(sea);
-  console.log("user", _user.is.alias);
-  let stellarNode = _user.get("stellar_wallet").get("account");
+  let user = gun.user().auth(sea);
+  console.log("user", user.is.alias);
+  let stellarNode = user.get("stellar_wallet").get("account");
   let stellarData = await stellarNode.then();
   if (!stellarData) {
     const account = await Account.createTestnet();
     stellarNode.put({ pubkey: account.pubkey, secret: account.secret });
     return json({ alias, sea, stellar_wallet: account });
   }
-  return json({ alias, sea, stellar_wallet: stellarData });
+  return jsesc({ alias, sea, stellar_wallet: stellarData });
 };
 function AuthResponse({ useActionData }: { useActionData: () => any }) {
   let data = useActionData();

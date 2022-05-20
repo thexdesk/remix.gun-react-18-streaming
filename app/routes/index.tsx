@@ -17,6 +17,7 @@ import { useGunStatic } from "~/lib/gun/hooks";
 import FormBuilder from "~/components/FormBuilder";
 import SimpleSkeleton from "~/components/skeleton/SimpleSkeleton";
 import invariant from "@remix-run/react/invariant";
+import BrowserWindow from "~/components/Browser";
 
 const noop = () => {};
 type ErrObj = {
@@ -93,6 +94,7 @@ export default function Index() {
   return (
     <>
       <WelcomeCard />
+      <BrowserWindow />
     </>
   );
 }

@@ -38,7 +38,7 @@ export interface RmxGunCtx {
         };
         gun: IGunInstance;
         SEA: ISEA
-        user: UserAuth
+        auth: UserAuth
         formData: () => Promise<Record<string, string>>;
     }
     // createToken: (sessionKey?: string) => Promise<string>,
