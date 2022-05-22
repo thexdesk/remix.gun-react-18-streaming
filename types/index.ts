@@ -6,11 +6,15 @@ import { User } from "dockerode";
 export * from "./loaders"
 
 
-export type NodeValues = Record<string, string>
-
+export type MenuLinks = {
+    id: string;
+    link: string;
+    label: string;
+    icon?: string;
+}[];
 export interface UserAuth {
-    keyPairAuth(pair: ISEAPair): Promise<unknown>;
-    credentials(alias: string, password: string): Promise<{ userInfo: GunUser, sea: ISEAPair }>;
+    keyPairAuth(pair: ISEAPair, cookie?: boolean): Promise<unknown>;
+    credentials(alias: string, password: string): Promise<{ user_info: GunUser, sea: ISEAPair }>;
     logout(): Promise<Response>
     getMasterUser(): IGunUserInstance
     getSessionData(): Promise<{
@@ -32,9 +36,7 @@ export interface RmxGunCtx {
         },
         gunOpts: {
             peers: string[];
-            radisk: boolean;
             localStorage: boolean;
-            accessToken: Function;
         };
         gun: IGunInstance;
         SEA: ISEA

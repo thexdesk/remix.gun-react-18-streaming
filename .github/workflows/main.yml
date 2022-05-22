@@ -25,18 +25,29 @@ jobs:
           git clone https://github.com/bresnow/remix.gun-react-18-streaming ~/remix_gun
           cd ~/remix_gun
 
+  docker:
+    runs-on: self-hosted
+
+    steps:
       - name: Build Docker Image & Push to Registry
         env:
-          VERSION: latest
+          VERSION: 0.1.2
 
         run: |
           docker build -t bresnow/rmx-gun:${{ env.VERSION }} .
           docker push bresnow/rmx-gun:${{ env.VERSION }}
 
       - name: Deploy Docker Swarm Script
+        env:
+          VERSION: 0.1.2
         run: |
+          export VERSION=${{ env.VERSION }}
           docker stack deploy -c docker_stack.yml rmx-gun
       #          # docker stack rm rmx-gun
       - name: Clean Up
         run: |
           rm -rf ~/remix_gun
+
+      - name: "Logs"
+        run: |
+          docker service logs rmx-gun_fltngmmth

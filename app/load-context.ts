@@ -21,14 +21,9 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         DOMAIN: getDomain(),
         PEER: `https://${ENV.PEER_DOMAIN}/gun`,
     };
-    const gunOpts: {
-        peers: string[];
-        radisk: boolean;
-        localStorage: boolean;
-    } = {
+    const gunOpts = {
         peers: [peerList.DOMAIN, peerList.PEER],
         localStorage: false,
-        radisk: true,
     }
     let gun = Gun(gunOpts);
     // Upgrade from Gun's user api sets pubkey and epub as user_info and SEA keypair in session storage ENCRYPTED with remix session api
@@ -93,7 +88,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
      * If alias is available it automaticatically creates a new user... likewise reasoning for login
      */
     async function credentials(alias: string, password: string) {
-        let session = await getSession(request.headers.get("Cookie"));
+        let session = await getSession()
         if ((await aliasAvailable(alias))) {
             try {
                 await createUser(alias, password)
@@ -104,10 +99,12 @@ export function RemixGunContext(Gun: IGun, request: Request) {
         return new Promise((resolve, reject) => gun.user().auth(alias, password, async (ack) => {
             if (Object.getOwnPropertyNames(ack).includes('sea')) {
                 let sea = (ack as any).sea as ISEAPair
-                let userInfo = (ack as any).put as GunUser
-                session.set(`user_info`, userInfo)
+                let user_info = (ack as any).put as GunUser
+                session.set(`user_info`, user_info)
                 session.set(`key_pair`, sea)
-                resolve({ userInfo, sea });
+                sea = session.get(`key_pair`)
+                user_info = session.get(`user_info`)
+                resolve({ user_info, sea });
             }
             if (errorCheck(ack)) {
                 let err = (ack as any).err as string
@@ -130,7 +127,7 @@ export function RemixGunContext(Gun: IGun, request: Request) {
 
 
     async function logout() {
-        const session = await getSession(request.headers.get("Cookie"));
+        const session = await getSession();
         return redirect(request.headers.get("Referer") ?? "/", {
             headers: {
                 "Set-Cookie": await destroySession(session),

@@ -34,28 +34,25 @@ export let action: ActionFunction = async ({ params, request, context }) => {
   if (typeof password !== "string") {
     return json({ error: "Invalid password entry" });
   }
-  let credentials: {
-    userInfo: GunUser;
-    sea: ISEAPair;
-  };
+  let user = gun.user();
+  let stellarNode = user.get("stellar_wallet").get("account");
+  let userInfo: GunUser,
+    sea: ISEAPair,
+    stellar_wallet: Record<string, any>,
+    account: {
+      pubkey: string;
+      secret: string;
+    };
+
   try {
-    credentials = await auth.credentials(alias, password);
+    let credentials = await auth.credentials(alias, password);
+    sea = credentials.sea;
+    userInfo = credentials.user_info;
   } catch (error) {
     return json({ error });
   }
-  let { userInfo, sea } = credentials,
-    { alias: _alias, pub } = userInfo;
 
-  let user = gun.user().auth(sea);
-  console.log("user", user.is.alias);
-  let stellarNode = user.get("stellar_wallet").get("account");
-  let stellarData = await stellarNode.then();
-  if (!stellarData) {
-    const account = await Account.createTestnet();
-    stellarNode.put({ pubkey: account.pubkey, secret: account.secret });
-    return json({ alias, sea, stellar_wallet: account });
-  }
-  return jsesc({ alias, sea, stellar_wallet: stellarData });
+  return json({ alias, sea });
 };
 function AuthResponse({ useActionData }: { useActionData: () => any }) {
   let data = useActionData();

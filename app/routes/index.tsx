@@ -99,7 +99,7 @@ export default function Index() {
       <WelcomeCard />
       <BrowserWindow />
       <Tag color={"green"} filled={true} label="Positive Green" />
-      <AppWindow />
+      {/* <AppWindow /> */}
     </>
   );
 }

@@ -53,7 +53,7 @@ services:
   # FRONTEND
 
   fltngmmth:
-    image: bresnow/rmx-gun:latest
+    image: bresnow/rmx-gun:${VERSION:-latest}
     deploy:
       replicas: 2
       placement:
@@ -80,11 +80,11 @@ services:
       - DOMAIN=${DOMAIN:-rmx-gun.fltngmmth.com}
     networks:
       - traefik-public
-    volumes:
-      - radata:/app/radata
-      #PEER DB
+    # volumes:
+    #   - radata:/app/radata
+    #PEER DB
   peer:
-    image: bresnow/rmx-gun:latest
+    image: bresnow/rmx-gun:${VERSION:-latest}
     deploy:
       replicas: 2
       placement:
@@ -111,13 +111,13 @@ services:
       - DOMAIN=${DOMAIN:-rmx-gun-peer.fltngmmth.com}
     networks:
       - traefik-public
-    volumes:
-      - peer-radata:/app/radata
+    # volumes:
+    #   - peer-radata:/app/radata
 
 volumes:
   traefik-certs:
-  peer-radata:
-  radata:
+  # peer-radata:
+  # radata:
 
 networks:
   traefik-public:

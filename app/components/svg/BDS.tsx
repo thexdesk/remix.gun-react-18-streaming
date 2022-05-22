@@ -9,7 +9,7 @@ const BDSLogo = (props: SVGProps<SVGSVGElement>) => (
     <defs>
       <style>
         {
-          ".prefix__a{fill:#f01973;fill-rule:evenodd}.prefix__c{fill:#38003d;stroke:#38003d;stroke-miterlimit:10;stroke-width:.74402px}.prefix__f{fill:#fff}"
+          ".prefix__a{fill:#f01973;fillRule:evenodd}.prefix__c{fill:#38003d;stroke:#38003d;stroke-miterlimit:10;stroke-width:.74402px}.prefix__f{fill:#fff}"
         }
       </style>
     </defs>

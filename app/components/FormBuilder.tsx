@@ -15,6 +15,8 @@ interface ButtonProps {
     | "pink"
     | "indigo";
   icon?: JSX.Element;
+  name?: string;
+  value?: string;
   disabled?: boolean;
   submit?: "submit" | "reset" | "button";
   isFat?: boolean;
@@ -106,6 +108,8 @@ const FormBuilder = () => {
           onClick={props.onClick}
           type={props.submit ?? "submit"}
           disabled={props.disabled}
+          name={props.name}
+          value={props.value}
           className={`${props.isFat ? "py-3 px-4 " : "py-2 px-2 "} ${
             props.icon ? "flex justify-center items-center " : ""
           } ${
