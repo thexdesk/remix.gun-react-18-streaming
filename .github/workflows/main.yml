@@ -4,9 +4,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - dev-checkpoint
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
   workflow_dispatch:
 
@@ -31,7 +34,7 @@ jobs:
     steps:
       - name: Build Docker Image & Push to Registry
         env:
-          VERSION: 0.1.2
+          VERSION: 0.2.0
 
         run: |
           docker build -t bresnow/rmx-gun:${{ env.VERSION }} .
@@ -39,15 +42,15 @@ jobs:
 
       - name: Deploy Docker Swarm Script
         env:
-          VERSION: 0.1.2
+          VERSION: 0.2.0
         run: |
           export VERSION=${{ env.VERSION }}
-          docker stack deploy -c docker_stack.yml rmx-gun
+          docker service update rmx-gun_fltngmmth --image=bresnow/rmx-gun:${{ env.VERSION }}
+          docker service update rmx-gun_peer --image=bresnow/rmx-gun:${{ env.VERSION }}
+      - name: "Logs"
+        run: |
+          docker service logs rmx-gun_fltngmmth
       #          # docker stack rm rmx-gun
       - name: Clean Up
         run: |
           rm -rf ~/remix_gun
-
-      - name: "Logs"
-        run: |
-          docker service logs rmx-gun_fltngmmth
