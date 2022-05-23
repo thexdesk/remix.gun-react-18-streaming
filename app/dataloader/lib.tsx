@@ -76,41 +76,41 @@ export function useDeferedLoaderData<T = any>(
   };
 }
 
-export function useGraphLoader(path: string) {
-  let dataloader = useDataLoader();
-  let { key } = useLocation();
-  let defered = useMemo(() => {
-    invariant(dataloader, "Context Provider is undefined for useGunFetcher");
-    let defered = { resolved: false } as {
-      resolved: boolean;
-      value?: any;
-      error?: any;
-      promise: Promise<void>;
-    };
-    defered.promise = dataloader
-      .graph(path)
-      .then((response) => response.json())
-      .then((value) => {
-        defered.value = value;
-        defered.resolved = true;
-      })
-      .catch((error) => {
-        defered.error = error;
-        defered.resolved = true;
-      });
-    return defered;
-  }, [path, key]);
+// export function useGraphLoader(path: string) {
+//   let dataloader = useDataLoader();
+//   let { key } = useLocation();
+//   let defered = useMemo(() => {
+//     invariant(dataloader, "Context Provider is undefined for useGunFetcher");
+//     let defered = { resolved: false } as {
+//       resolved: boolean;
+//       value?: any;
+//       error?: any;
+//       promise: Promise<void>;
+//     };
+//     defered.promise = dataloader
+//       .graph(path)
+//       .then((response) => response.json())
+//       .then((value) => {
+//         defered.value = value;
+//         defered.resolved = true;
+//       })
+//       .catch((error) => {
+//         defered.error = error;
+//         defered.resolved = true;
+//       });
+//     return defered;
+//   }, [path, key]);
 
-  return {
-    load(): any {
-      if (typeof defered.value !== "undefined") {
-        return defered.value;
-      }
-      if (typeof defered.error !== "undefined") {
-        throw defered.error;
-      }
+//   return {
+//     load(): any {
+//       if (typeof defered.value !== "undefined") {
+//         return defered.value;
+//       }
+//       if (typeof defered.error !== "undefined") {
+//         throw defered.error;
+//       }
 
-      throw defered.promise;
-    },
-  };
-}
+//       throw defered.promise;
+//     },
+//   };
+// }

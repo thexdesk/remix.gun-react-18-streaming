@@ -21,7 +21,7 @@ export function createServerDataloader(
   return {
     async load(id?: string) {
       console.log(currentRouteId() + ": " + id)
-      let route: ServerRouteModule = build.routeModules["routes/" + id ?? currentRouteId()];
+      let route: ServerRouteModule = build.routeModules["routes/" + id];
 
       if (!route) {
         throw new Error(`Route ${id} not found`);
@@ -36,15 +36,15 @@ export function createServerDataloader(
       return json(result)
 
     },
-    async graph(path: string) {
-      let { RemixGunContext } = context as LoadCtx;
-      let { gun } = RemixGunContext(Gun, request);
-      let data = await gun.path(path).then()
-      if (typeof data !== "undefined") {
-        return json(data)
-      }
-      return json({ error: "not found" })
-    }
+    // async graph(path: string) {
+    //   let { RemixGunContext } = context as LoadCtx;
+    //   let { gun } = RemixGunContext(Gun, request);
+    //   let data = await gun.path(path).then()
+    //   if (typeof data !== "undefined") {
+    //     return json(data)
+    //   }
+    //   return json({ error: "not found" })
+    // }
 
   }
 }

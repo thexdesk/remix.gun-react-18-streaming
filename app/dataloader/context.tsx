@@ -4,7 +4,6 @@ import type { IGun } from "gun";
 
 export interface ClientContext {
   load(route: string): Promise<Response>;
-  graph(path: string): Promise<Response>;
 };
 
 let context = createContext<ClientContext | undefined>(undefined);

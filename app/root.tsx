@@ -34,44 +34,7 @@ export const links: LinksFunction = () => {
     },
   ];
 };
-type StateMachineInit<T> = T;
-export function StateMachine<T, ActionType>(
-  handlers: Map<ActionType, (state: StateMachineInit<T>) => StateMachineInit<T>>
-) {
-  return function dispatcher(
-    state: StateMachineInit<T>,
-    {
-      type,
-    }: {
-      type: ActionType;
-    }
-  ) {
-    let handle = handlers.get(type);
 
-    handle ? (state = handle(state)) : null;
-    const dispatch = ({
-      type,
-      payload,
-    }: {
-      type: ActionType;
-      payload?: StateMachineInit<T>;
-    }) => dispatcher({ ...state, payload }, { type });
-    return { state, dispatch };
-  };
-}
-
-const ACTION = { TOGGLE: "TOGGLE", RECORD: "RECORD" };
-type ActionType = typeof ACTION.TOGGLE | typeof ACTION.RECORD;
-type StateType = Partial<{ toggle: boolean; record: Record<string, string> }>;
-export let handler = new Map<ActionType, (state: StateType) => StateType>([
-  [ACTION.TOGGLE, (state) => ({ ...state, toggle: !state.toggle })],
-  [
-    ACTION.RECORD,
-    (state) => {
-      return state;
-    },
-  ],
-]);
 export let loader: LoaderFunction = async ({ params, request, context }) => {
   let { RemixGunContext } = context as LoadCtx;
   let { ENV, gun, auth, SEA } = RemixGunContext(Gun, request);
@@ -85,17 +48,6 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
     } catch (error) {}
   }
 
-  let init = StateMachine(handler);
-  let first = init({ toggle: true }, { type: ACTION.TOGGLE });
-  console.log(first.state, "STATE_MACHINE_TOGGLE_FALSE");
-  let second = first.dispatch({ type: ACTION.TOGGLE });
-  console.log(second.state, "STATE_MACHINE_TOGGLE_TRUE");
-  let record = second.dispatch({
-    type: ACTION.RECORD,
-    payload: { record: { test: "testikleeez" } },
-  });
-  console.log(record.state, "STATE_MACHINE_RECORD");
-  console.log(first.state, "STATE_MACHINE_CHECK");
   let meta = await app.get("pages").get("root").get("meta").then();
   let { radisk, peers, localStorage } = (gun as any).back("opt");
   let gunOpts = {
@@ -108,7 +60,6 @@ export let loader: LoaderFunction = async ({ params, request, context }) => {
     meta,
     gunOpts,
     ENV,
-    user: {},
   };
 
   return json(DATA);
@@ -401,7 +352,7 @@ export default function App() {
         <ScrollRestoration />
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.ENV = ${ENV};`,
+            __html: `window.ENV = ${jsesc(ENV)};`,
           }}
         />
 

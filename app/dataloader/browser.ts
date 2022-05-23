@@ -10,9 +10,6 @@ export function createDeferedLoader() {
       );
       // url.searchParams.set("_data", id);
       return fetch(url.toString());
-    },
-    async graph(path: string) {
-
     }
   }
 }
